@@ -44,6 +44,7 @@ public class MutableColumnFamilyOptions
    * key1=value1;intArrayKey1=1:2:3
    *
    * @param str The string representation of the mutable column family options
+   * @param ignoreUnknown what to do if the key is not one of the keys we expect
    *
    * @return A builder for the mutable column family options
    */
@@ -119,7 +120,8 @@ public class MutableColumnFamilyOptions
     blob_file_size(ValueType.LONG),
     blob_compression_type(ValueType.ENUM),
     enable_blob_garbage_collection(ValueType.BOOLEAN),
-    blob_garbage_collection_age_cutoff(ValueType.DOUBLE);
+    blob_garbage_collection_age_cutoff(ValueType.DOUBLE),
+    blob_garbage_collection_force_threshold(ValueType.DOUBLE);
 
     private final ValueType valueType;
     BlobOption(final ValueType valueType) {
@@ -545,6 +547,18 @@ public class MutableColumnFamilyOptions
     @Override
     public double blobGarbageCollectionAgeCutoff() {
       return getDouble(BlobOption.blob_garbage_collection_age_cutoff);
+    }
+
+    @Override
+    public MutableColumnFamilyOptionsBuilder setBlobGarbageCollectionForceThreshold(
+        final double blobGarbageCollectionForceThreshold) {
+      return setDouble(
+          BlobOption.blob_garbage_collection_force_threshold, blobGarbageCollectionForceThreshold);
+    }
+
+    @Override
+    public double blobGarbageCollectionForceThreshold() {
+      return getDouble(BlobOption.blob_garbage_collection_force_threshold);
     }
   }
 }

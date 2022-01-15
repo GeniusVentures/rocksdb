@@ -35,7 +35,9 @@
 #include "logging/logging.h"
 #include "monitoring/iostats_context_imp.h"
 #include "port/port.h"
+#include "rocksdb/env.h"
 #include "rocksdb/rate_limiter.h"
+#include "rocksdb/statistics.h"
 #include "rocksdb/transaction_log.h"
 #include "table/sst_file_dumper.h"
 #include "test_util/sync_point.h"
@@ -43,6 +45,7 @@
 #include "util/channel.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
+#include "util/math.h"
 #include "util/string_util.h"
 #include "utilities/backupable/backupable_db_impl.h"
 #include "utilities/checkpoint/checkpoint_impl.h"
@@ -231,6 +234,12 @@ class BackupEngineImpl {
       return rv;
     }
   };
+
+  static void LoopRateLimitRequestHelper(const size_t total_bytes_to_request,
+                                         RateLimiter* rate_limiter,
+                                         const Env::IOPriority pri,
+                                         Statistics* stats,
+                                         const RateLimiter::OpType op_type);
 
   static inline std::string WithoutTrailingSlash(const std::string& path) {
     if (path.empty() || path.back() != '/') {
@@ -1438,19 +1447,24 @@ IOStatus BackupEngineImpl::CreateNewBackupWithMetadata(
                        io_options_, &backup_private_directory, nullptr)
         .PermitUncheckedError();
     if (backup_private_directory != nullptr) {
-      io_s = backup_private_directory->Fsync(io_options_, nullptr);
+      io_s = backup_private_directory->FsyncWithDirOptions(io_options_, nullptr,
+                                                           DirFsyncOptions());
     }
     if (io_s.ok() && private_directory_ != nullptr) {
-      io_s = private_directory_->Fsync(io_options_, nullptr);
+      io_s = private_directory_->FsyncWithDirOptions(io_options_, nullptr,
+                                                     DirFsyncOptions());
     }
     if (io_s.ok() && meta_directory_ != nullptr) {
-      io_s = meta_directory_->Fsync(io_options_, nullptr);
+      io_s = meta_directory_->FsyncWithDirOptions(io_options_, nullptr,
+                                                  DirFsyncOptions());
     }
     if (io_s.ok() && shared_directory_ != nullptr) {
-      io_s = shared_directory_->Fsync(io_options_, nullptr);
+      io_s = shared_directory_->FsyncWithDirOptions(io_options_, nullptr,
+                                                    DirFsyncOptions());
     }
     if (io_s.ok() && backup_directory_ != nullptr) {
-      io_s = backup_directory_->Fsync(io_options_, nullptr);
+      io_s = backup_directory_->FsyncWithDirOptions(io_options_, nullptr,
+                                                    DirFsyncOptions());
     }
   }
 
@@ -1832,15 +1846,17 @@ IOStatus BackupEngineImpl::RestoreDBFromBackup(
     }
   }
 
-  // When enabled, the first Fsync is to ensure all files are fully persisted
-  // before renaming CURRENT.tmp
+  // When enabled, the first FsyncWithDirOptions is to ensure all files are
+  // fully persisted before renaming CURRENT.tmp
   if (io_s.ok() && db_dir_for_fsync) {
     ROCKS_LOG_INFO(options_.info_log, "Restore: fsync\n");
-    io_s = db_dir_for_fsync->Fsync(io_options_, nullptr);
+    io_s = db_dir_for_fsync->FsyncWithDirOptions(io_options_, nullptr,
+                                                 DirFsyncOptions());
   }
 
   if (io_s.ok() && wal_dir_for_fsync) {
-    io_s = wal_dir_for_fsync->Fsync(io_options_, nullptr);
+    io_s = wal_dir_for_fsync->FsyncWithDirOptions(io_options_, nullptr,
+                                                  DirFsyncOptions());
   }
 
   if (io_s.ok() && !temporary_current_file.empty()) {
@@ -1851,11 +1867,12 @@ IOStatus BackupEngineImpl::RestoreDBFromBackup(
   }
 
   if (io_s.ok() && db_dir_for_fsync && !temporary_current_file.empty()) {
-    // Second Fsync is to ensure the final atomic rename of DB restore is
-    // fully persisted even if power goes out right after restore operation
-    // returns success
+    // Second FsyncWithDirOptions is to ensure the final atomic rename of DB
+    // restore is fully persisted even if power goes out right after restore
+    // operation returns success
     assert(db_dir_for_fsync);
-    io_s = db_dir_for_fsync->Fsync(io_options_, nullptr);
+    io_s = db_dir_for_fsync->FsyncWithDirOptions(
+        io_options_, nullptr, DirFsyncOptions(final_current_file));
   }
 
   ROCKS_LOG_INFO(options_.info_log, "Restoring done -- %s\n",
@@ -2014,9 +2031,16 @@ IOStatus BackupEngineImpl::CopyOrCreateFile(
       checksum_value = crc32c::Extend(checksum_value, data.data(), data.size());
     }
     io_s = dest_writer->Append(data);
+
     if (rate_limiter != nullptr) {
-      rate_limiter->Request(data.size(), Env::IO_LOW, nullptr /* stats */,
-                            RateLimiter::OpType::kWrite);
+      if (!src.empty()) {
+        rate_limiter->Request(data.size(), Env::IO_LOW, nullptr /* stats */,
+                              RateLimiter::OpType::kWrite);
+      } else {
+        LoopRateLimitRequestHelper(data.size(), rate_limiter, Env::IO_LOW,
+                                   nullptr /* stats */,
+                                   RateLimiter::OpType::kWrite);
+      }
     }
     while (*bytes_toward_next_callback >=
            options_.callback_trigger_interval_size) {
@@ -2350,8 +2374,9 @@ Status BackupEngineImpl::GetFileDbIdentities(Env* src_env,
         // sizeof(*table_properties) is a sufficent but far-from-exact
         // approximation of read bytes due to metaindex block, std::string
         // properties and varint compression
-        rate_limiter->Request(sizeof(*table_properties), Env::IO_LOW,
-                              nullptr /* stats */, RateLimiter::OpType::kRead);
+        LoopRateLimitRequestHelper(sizeof(*table_properties), rate_limiter,
+                                   Env::IO_LOW, nullptr /* stats */,
+                                   RateLimiter::OpType::kRead);
       }
     }
   } else {
@@ -2377,6 +2402,22 @@ Status BackupEngineImpl::GetFileDbIdentities(Env* src_env,
     s = Status::Corruption("Table properties missing in " + file_path);
     ROCKS_LOG_INFO(options_.info_log, "%s", s.ToString().c_str());
     return s;
+  }
+}
+
+void BackupEngineImpl::LoopRateLimitRequestHelper(
+    const size_t total_bytes_to_request, RateLimiter* rate_limiter,
+    const Env::IOPriority pri, Statistics* stats,
+    const RateLimiter::OpType op_type) {
+  assert(rate_limiter != nullptr);
+  size_t remaining_bytes = total_bytes_to_request;
+  size_t request_bytes = 0;
+  while (remaining_bytes > 0) {
+    request_bytes =
+        std::min(static_cast<size_t>(rate_limiter->GetSingleBurstBytes()),
+                 remaining_bytes);
+    rate_limiter->Request(request_bytes, pri, stats, op_type);
+    remaining_bytes -= request_bytes;
   }
 }
 
@@ -2708,8 +2749,9 @@ IOStatus BackupEngineImpl::BackupMeta::LoadFromFile(
   std::string line;
   if (backup_meta_reader->ReadLine(&line)) {
     if (rate_limiter != nullptr) {
-      rate_limiter->Request(line.size(), Env::IO_LOW, nullptr /* stats */,
-                            RateLimiter::OpType::kRead);
+      LoopRateLimitRequestHelper(line.size(), rate_limiter, Env::IO_LOW,
+                                 nullptr /* stats */,
+                                 RateLimiter::OpType::kRead);
     }
     if (StartsWith(line, kSchemaVersionPrefix)) {
       std::string ver = line.substr(kSchemaVersionPrefix.size());
@@ -2728,23 +2770,26 @@ IOStatus BackupEngineImpl::BackupMeta::LoadFromFile(
     timestamp_ = std::strtoull(line.c_str(), nullptr, /*base*/ 10);
   } else if (backup_meta_reader->ReadLine(&line)) {
     if (rate_limiter != nullptr) {
-      rate_limiter->Request(line.size(), Env::IO_LOW, nullptr /* stats */,
-                            RateLimiter::OpType::kRead);
+      LoopRateLimitRequestHelper(line.size(), rate_limiter, Env::IO_LOW,
+                                 nullptr /* stats */,
+                                 RateLimiter::OpType::kRead);
     }
     timestamp_ = std::strtoull(line.c_str(), nullptr, /*base*/ 10);
   }
   if (backup_meta_reader->ReadLine(&line)) {
     if (rate_limiter != nullptr) {
-      rate_limiter->Request(line.size(), Env::IO_LOW, nullptr /* stats */,
-                            RateLimiter::OpType::kRead);
+      LoopRateLimitRequestHelper(line.size(), rate_limiter, Env::IO_LOW,
+                                 nullptr /* stats */,
+                                 RateLimiter::OpType::kRead);
     }
     sequence_number_ = std::strtoull(line.c_str(), nullptr, /*base*/ 10);
   }
   uint32_t num_files = UINT32_MAX;
   while (backup_meta_reader->ReadLine(&line)) {
     if (rate_limiter != nullptr) {
-      rate_limiter->Request(line.size(), Env::IO_LOW, nullptr /* stats */,
-                            RateLimiter::OpType::kRead);
+      LoopRateLimitRequestHelper(line.size(), rate_limiter, Env::IO_LOW,
+                                 nullptr /* stats */,
+                                 RateLimiter::OpType::kRead);
     }
     if (line.empty()) {
       return IOStatus::Corruption("Unexpected empty line");
@@ -2786,8 +2831,9 @@ IOStatus BackupEngineImpl::BackupMeta::LoadFromFile(
   bool footer_present = false;
   while (backup_meta_reader->ReadLine(&line)) {
     if (rate_limiter != nullptr) {
-      rate_limiter->Request(line.size(), Env::IO_LOW, nullptr /* stats */,
-                            RateLimiter::OpType::kRead);
+      LoopRateLimitRequestHelper(line.size(), rate_limiter, Env::IO_LOW,
+                                 nullptr /* stats */,
+                                 RateLimiter::OpType::kRead);
     }
     std::vector<std::string> components = StringSplit(line, ' ');
 
@@ -2877,8 +2923,9 @@ IOStatus BackupEngineImpl::BackupMeta::LoadFromFile(
     assert(schema_major_version >= 2);
     while (backup_meta_reader->ReadLine(&line)) {
       if (rate_limiter != nullptr) {
-        rate_limiter->Request(line.size(), Env::IO_LOW, nullptr /* stats */,
-                              RateLimiter::OpType::kRead);
+        LoopRateLimitRequestHelper(line.size(), rate_limiter, Env::IO_LOW,
+                                   nullptr /* stats */,
+                                   RateLimiter::OpType::kRead);
       }
       if (line.empty()) {
         return IOStatus::Corruption("Unexpected empty line");

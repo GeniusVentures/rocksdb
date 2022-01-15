@@ -950,7 +950,7 @@ extern ROCKSDB_LIBRARY_API void rocksdb_options_set_merge_operator(
 extern ROCKSDB_LIBRARY_API void rocksdb_options_set_uint64add_merge_operator(
     rocksdb_options_t*);
 extern ROCKSDB_LIBRARY_API void rocksdb_options_set_compression_per_level(
-    rocksdb_options_t* opt, int* level_values, size_t num_levels);
+    rocksdb_options_t* opt, const int* level_values, size_t num_levels);
 extern ROCKSDB_LIBRARY_API void rocksdb_options_set_create_if_missing(
     rocksdb_options_t*, unsigned char);
 extern ROCKSDB_LIBRARY_API unsigned char rocksdb_options_get_create_if_missing(
@@ -1121,6 +1121,12 @@ extern ROCKSDB_LIBRARY_API void rocksdb_options_set_blob_gc_force_threshold(
     rocksdb_options_t* opt, double val);
 extern ROCKSDB_LIBRARY_API double rocksdb_options_get_blob_gc_force_threshold(
     rocksdb_options_t* opt);
+
+extern ROCKSDB_LIBRARY_API void
+rocksdb_options_set_blob_compaction_readahead_size(rocksdb_options_t* opt,
+                                                   uint64_t val);
+extern ROCKSDB_LIBRARY_API uint64_t
+rocksdb_options_get_blob_compaction_readahead_size(rocksdb_options_t* opt);
 
 /* returns a pointer to a malloc()-ed, null terminated string */
 extern ROCKSDB_LIBRARY_API char* rocksdb_options_statistics_get_string(
@@ -1989,6 +1995,8 @@ extern ROCKSDB_LIBRARY_API void rocksdb_fifo_compaction_options_destroy(
 
 extern ROCKSDB_LIBRARY_API int rocksdb_livefiles_count(
     const rocksdb_livefiles_t*);
+extern ROCKSDB_LIBRARY_API const char* rocksdb_livefiles_column_family_name(
+    const rocksdb_livefiles_t*, int index);
 extern ROCKSDB_LIBRARY_API const char* rocksdb_livefiles_name(
     const rocksdb_livefiles_t*, int index);
 extern ROCKSDB_LIBRARY_API int rocksdb_livefiles_level(

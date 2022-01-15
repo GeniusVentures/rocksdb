@@ -92,6 +92,9 @@ public class Options extends RocksObject
     this.rowCache_ = other.rowCache_;
     this.writeBufferManager_ = other.writeBufferManager_;
     this.compactionThreadLimiter_ = other.compactionThreadLimiter_;
+    this.bottommostCompressionOptions_ = other.bottommostCompressionOptions_;
+    this.walFilter_ = other.walFilter_;
+    this.sstPartitionerFactory_ = other.sstPartitionerFactory_;
   }
 
   @Override
@@ -2077,7 +2080,7 @@ public class Options extends RocksObject
   }
 
   @Override
-  public Options setBlobGarbageCollectionAgeCutoff(double blobGarbageCollectionAgeCutoff) {
+  public Options setBlobGarbageCollectionAgeCutoff(final double blobGarbageCollectionAgeCutoff) {
     setBlobGarbageCollectionAgeCutoff(nativeHandle_, blobGarbageCollectionAgeCutoff);
     return this;
   }
@@ -2085,6 +2088,18 @@ public class Options extends RocksObject
   @Override
   public double blobGarbageCollectionAgeCutoff() {
     return blobGarbageCollectionAgeCutoff(nativeHandle_);
+  }
+
+  @Override
+  public Options setBlobGarbageCollectionForceThreshold(
+      final double blobGarbageCollectionForceThreshold) {
+    setBlobGarbageCollectionForceThreshold(nativeHandle_, blobGarbageCollectionForceThreshold);
+    return this;
+  }
+
+  @Override
+  public double blobGarbageCollectionForceThreshold() {
+    return blobGarbageCollectionForceThreshold(nativeHandle_);
   }
 
   //
@@ -2517,8 +2532,11 @@ public class Options extends RocksObject
       final long nativeHandle_, final boolean enableBlobGarbageCollection);
   private native boolean enableBlobGarbageCollection(final long nativeHandle_);
   private native void setBlobGarbageCollectionAgeCutoff(
-      final long nativeHandle_, double blobGarbageCollectionAgeCutoff);
+      final long nativeHandle_, final double blobGarbageCollectionAgeCutoff);
   private native double blobGarbageCollectionAgeCutoff(final long nativeHandle_);
+  private native void setBlobGarbageCollectionForceThreshold(
+      final long nativeHandle_, final double blobGarbageCollectionForceThreshold);
+  private native double blobGarbageCollectionForceThreshold(final long nativeHandle_);
 
   // instance variables
   // NOTE: If you add new member variables, please update the copy constructor above!
