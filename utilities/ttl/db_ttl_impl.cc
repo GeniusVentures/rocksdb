@@ -327,18 +327,6 @@ Status DBWithTTLImpl::Close() {
   return ret;
 }
 
-Status UtilityDB::OpenTtlDB(const Options& options, const std::string& dbname,
-                            StackableDB** dbptr, int32_t ttl, bool read_only) {
-  DBWithTTL* db;
-  Status s = DBWithTTL::Open(options, dbname, &db, ttl, read_only);
-  if (s.ok()) {
-    *dbptr = db;
-  } else {
-    *dbptr = nullptr;
-  }
-  return s;
-}
-
 void DBWithTTLImpl::RegisterTtlClasses() {
   static std::once_flag once;
   std::call_once(once, [&]() {
@@ -607,14 +595,13 @@ Iterator* DBWithTTLImpl::NewIterator(const ReadOptions& opts,
   return new TtlIterator(db_->NewIterator(opts, column_family));
 }
 
-void DBWithTTLImpl::SetTtl(ColumnFamilyHandle *h, int32_t ttl) {
+void DBWithTTLImpl::SetTtl(ColumnFamilyHandle* h, int32_t ttl) {
   std::shared_ptr<TtlCompactionFilterFactory> filter;
   Options opts;
   opts = GetOptions(h);
   filter = std::static_pointer_cast<TtlCompactionFilterFactory>(
-                                       opts.compaction_filter_factory);
-  if (!filter)
-    return;
+      opts.compaction_filter_factory);
+  if (!filter) return;
   filter->SetTtl(ttl);
 }
 
