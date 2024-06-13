@@ -36,16 +36,12 @@ struct FSFileState {
   std::string filename_;
   ssize_t pos_;
   ssize_t pos_at_last_sync_;
-  ssize_t pos_at_last_flush_;
   std::string buffer_;
 
   explicit FSFileState(const std::string& filename)
-      : filename_(filename),
-        pos_(-1),
-        pos_at_last_sync_(-1),
-        pos_at_last_flush_(-1) {}
+      : filename_(filename), pos_(-1), pos_at_last_sync_(-1) {}
 
-  FSFileState() : pos_(-1), pos_at_last_sync_(-1), pos_at_last_flush_(-1) {}
+  FSFileState() : pos_(-1), pos_at_last_sync_(-1) {}
 
   bool IsFullySynced() const { return pos_ <= 0 || pos_ == pos_at_last_sync_; }
 
@@ -63,38 +59,39 @@ class TestFSWritableFile : public FSWritableFile {
                               std::unique_ptr<FSWritableFile>&& f,
                               FaultInjectionTestFS* fs);
   virtual ~TestFSWritableFile();
-  virtual IOStatus Append(const Slice& data, const IOOptions&,
-                          IODebugContext*) override;
-  virtual IOStatus Append(const Slice& data, const IOOptions& options,
-                          const DataVerificationInfo& verification_info,
-                          IODebugContext* dbg) override;
-  virtual IOStatus Truncate(uint64_t size, const IOOptions& options,
-                            IODebugContext* dbg) override {
+  IOStatus Append(const Slice& data, const IOOptions&,
+                  IODebugContext*) override;
+  IOStatus Append(const Slice& data, const IOOptions& options,
+                  const DataVerificationInfo& verification_info,
+                  IODebugContext* dbg) override;
+  IOStatus Truncate(uint64_t size, const IOOptions& options,
+                    IODebugContext* dbg) override {
     return target_->Truncate(size, options, dbg);
   }
-  virtual IOStatus Close(const IOOptions& options,
-                         IODebugContext* dbg) override;
-  virtual IOStatus Flush(const IOOptions&, IODebugContext*) override;
-  virtual IOStatus Sync(const IOOptions& options, IODebugContext* dbg) override;
-  virtual IOStatus RangeSync(uint64_t /*offset*/, uint64_t /*nbytes*/,
-                             const IOOptions& options,
-                             IODebugContext* dbg) override;
-  virtual bool IsSyncThreadSafe() const override { return true; }
-  virtual IOStatus PositionedAppend(const Slice& data, uint64_t offset,
-                                    const IOOptions& options,
-                                    IODebugContext* dbg) override {
+  IOStatus Close(const IOOptions& options, IODebugContext* dbg) override;
+  IOStatus Flush(const IOOptions&, IODebugContext*) override;
+  IOStatus Sync(const IOOptions& options, IODebugContext* dbg) override;
+  IOStatus RangeSync(uint64_t /*offset*/, uint64_t /*nbytes*/,
+                     const IOOptions& options, IODebugContext* dbg) override;
+  bool IsSyncThreadSafe() const override { return true; }
+  IOStatus PositionedAppend(const Slice& data, uint64_t offset,
+                            const IOOptions& options,
+                            IODebugContext* dbg) override {
     return target_->PositionedAppend(data, offset, options, dbg);
   }
   IOStatus PositionedAppend(const Slice& data, uint64_t offset,
                             const IOOptions& options,
                             const DataVerificationInfo& verification_info,
                             IODebugContext* dbg) override;
-  virtual size_t GetRequiredBufferAlignment() const override {
+  size_t GetRequiredBufferAlignment() const override {
     return target_->GetRequiredBufferAlignment();
   }
-  virtual bool use_direct_io() const override {
-    return target_->use_direct_io();
-  };
+  bool use_direct_io() const override { return target_->use_direct_io(); }
+
+  uint64_t GetFileSize(const IOOptions& options, IODebugContext* dbg) override {
+    MutexLock l(&mutex_);
+    return target_->GetFileSize(options, dbg);
+  }
 
  private:
   FSFileState state_;  // Need protection by mutex_
@@ -124,7 +121,7 @@ class TestFSRandomRWFile : public FSRandomRWFile {
   size_t GetRequiredBufferAlignment() const override {
     return target_->GetRequiredBufferAlignment();
   }
-  bool use_direct_io() const override { return target_->use_direct_io(); };
+  bool use_direct_io() const override { return target_->use_direct_io(); }
 
  private:
   std::unique_ptr<FSRandomRWFile> target_;
@@ -142,7 +139,7 @@ class TestFSRandomAccessFile : public FSRandomAccessFile {
                 Slice* result, char* scratch,
                 IODebugContext* dbg) const override;
   IOStatus ReadAsync(FSReadRequest& req, const IOOptions& opts,
-                     std::function<void(const FSReadRequest&, void*)> cb,
+                     std::function<void(FSReadRequest&, void*)> cb,
                      void* cb_arg, void** io_handle, IOHandleDeleter* del_fn,
                      IODebugContext* dbg) override;
   IOStatus MultiRead(FSReadRequest* reqs, size_t num_reqs,
@@ -162,8 +159,10 @@ class TestFSRandomAccessFile : public FSRandomAccessFile {
 class TestFSSequentialFile : public FSSequentialFileOwnerWrapper {
  public:
   explicit TestFSSequentialFile(std::unique_ptr<FSSequentialFile>&& f,
-                                FaultInjectionTestFS* fs)
-      : FSSequentialFileOwnerWrapper(std::move(f)), fs_(fs) {}
+                                FaultInjectionTestFS* fs, std::string fname)
+      : FSSequentialFileOwnerWrapper(std::move(f)),
+        fs_(fs),
+        fname_(std::move(fname)) {}
   IOStatus Read(size_t n, const IOOptions& options, Slice* result,
                 char* scratch, IODebugContext* dbg) override;
   IOStatus PositionedRead(uint64_t offset, size_t n, const IOOptions& options,
@@ -172,22 +171,22 @@ class TestFSSequentialFile : public FSSequentialFileOwnerWrapper {
 
  private:
   FaultInjectionTestFS* fs_;
+  std::string fname_;
+  size_t read_pos_ = 0;
 };
 
 class TestFSDirectory : public FSDirectory {
  public:
   explicit TestFSDirectory(FaultInjectionTestFS* fs, std::string dirname,
                            FSDirectory* dir)
-      : fs_(fs), dirname_(dirname), dir_(dir) {}
+      : fs_(fs), dirname_(std::move(dirname)), dir_(dir) {}
   ~TestFSDirectory() {}
 
-  virtual IOStatus Fsync(const IOOptions& options,
-                         IODebugContext* dbg) override;
+  IOStatus Fsync(const IOOptions& options, IODebugContext* dbg) override;
 
-  virtual IOStatus Close(const IOOptions& options,
-                         IODebugContext* dbg) override;
+  IOStatus Close(const IOOptions& options, IODebugContext* dbg) override;
 
-  virtual IOStatus FsyncWithDirOptions(
+  IOStatus FsyncWithDirOptions(
       const IOOptions& options, IODebugContext* dbg,
       const DirFsyncOptions& dir_fsync_options) override;
 
@@ -203,6 +202,8 @@ class FaultInjectionTestFS : public FileSystemWrapper {
       : FileSystemWrapper(base),
         filesystem_active_(true),
         filesystem_writable_(false),
+        read_unsynced_data_(true),
+        allow_link_open_file_(false),
         thread_local_error_(new ThreadLocalPtr(DeleteThreadLocalErrorContext)),
         enable_write_error_injection_(false),
         enable_metadata_write_error_injection_(false),
@@ -211,6 +212,7 @@ class FaultInjectionTestFS : public FileSystemWrapper {
         metadata_write_error_one_in_(0),
         read_error_one_in_(0),
         ingest_data_corruption_before_write_(false),
+        checksum_handoff_func_type_(kCRC32c),
         fail_get_file_unique_id_(false) {}
   virtual ~FaultInjectionTestFS() { error_.PermitUncheckedError(); }
 
@@ -231,6 +233,12 @@ class FaultInjectionTestFS : public FileSystemWrapper {
                               std::unique_ptr<FSWritableFile>* result,
                               IODebugContext* dbg) override;
 
+  IOStatus ReuseWritableFile(const std::string& fname,
+                             const std::string& old_fname,
+                             const FileOptions& file_opts,
+                             std::unique_ptr<FSWritableFile>* result,
+                             IODebugContext* dbg) override;
+
   IOStatus NewRandomRWFile(const std::string& fname,
                            const FileOptions& file_opts,
                            std::unique_ptr<FSRandomRWFile>* result,
@@ -244,22 +252,21 @@ class FaultInjectionTestFS : public FileSystemWrapper {
                              std::unique_ptr<FSSequentialFile>* r,
                              IODebugContext* dbg) override;
 
-  virtual IOStatus DeleteFile(const std::string& f, const IOOptions& options,
-                              IODebugContext* dbg) override;
+  IOStatus DeleteFile(const std::string& f, const IOOptions& options,
+                      IODebugContext* dbg) override;
 
-  virtual IOStatus RenameFile(const std::string& s, const std::string& t,
-                              const IOOptions& options,
-                              IODebugContext* dbg) override;
+  IOStatus GetFileSize(const std::string& f, const IOOptions& options,
+                       uint64_t* file_size, IODebugContext* dbg) override;
+  IOStatus RenameFile(const std::string& s, const std::string& t,
+                      const IOOptions& options, IODebugContext* dbg) override;
 
-  virtual IOStatus LinkFile(const std::string& src, const std::string& target,
-                            const IOOptions& options,
-                            IODebugContext* dbg) override;
+  IOStatus LinkFile(const std::string& src, const std::string& target,
+                    const IOOptions& options, IODebugContext* dbg) override;
 
 // Undef to eliminate clash on Windows
 #undef GetFreeSpace
-  virtual IOStatus GetFreeSpace(const std::string& path,
-                                const IOOptions& options, uint64_t* disk_free,
-                                IODebugContext* dbg) override {
+  IOStatus GetFreeSpace(const std::string& path, const IOOptions& options,
+                        uint64_t* disk_free, IODebugContext* dbg) override {
     IOStatus io_s;
     if (!IsFilesystemActive() &&
         error_.subcode() == IOStatus::SubCode::kNoSpace) {
@@ -270,10 +277,10 @@ class FaultInjectionTestFS : public FileSystemWrapper {
     return io_s;
   }
 
-  virtual IOStatus Poll(std::vector<void*>& io_handles,
-                        size_t min_completions) override;
+  IOStatus Poll(std::vector<void*>& io_handles,
+                size_t min_completions) override;
 
-  virtual IOStatus AbortIO(std::vector<void*>& io_handles) override;
+  IOStatus AbortIO(std::vector<void*>& io_handles) override;
 
   void WritableFileClosed(const FSFileState& state);
 
@@ -323,8 +330,8 @@ class FaultInjectionTestFS : public FileSystemWrapper {
     if (!TryParseFileName(file_name, &file_number, &file_type)) {
       return false;
     }
-    return skip_direct_writable_types_.find(file_type) !=
-           skip_direct_writable_types_.end();
+    return direct_writable_types_.find(file_type) !=
+           direct_writable_types_.end();
   }
   void SetFilesystemActiveNoLock(
       bool active, IOStatus error = IOStatus::Corruption("Not active")) {
@@ -344,6 +351,29 @@ class FaultInjectionTestFS : public FileSystemWrapper {
     MutexLock l(&mutex_);
     filesystem_writable_ = writable;
   }
+  // In places (e.g. GetSortedWals()) RocksDB relies on querying the file size
+  // or even reading the contents of files currently open for writing, and
+  // as in POSIX semantics, expects to see the flushed size and contents
+  // regardless of what has been synced. FaultInjectionTestFS historically
+  // did not emulate this behavior, only showing synced data from such read
+  // operations. (Different from FaultInjectionTestEnv--sigh.) Calling this
+  // function with false restores this historical behavior for testing
+  // stability, but use of this semantics must be phased out as it is
+  // inconsistent with expected FileSystem semantics. In other words, this
+  // functionality is DEPRECATED. Intended to be set after construction and
+  // unchanged (not thread safe).
+  void SetReadUnsyncedData(bool read_unsynced_data) {
+    read_unsynced_data_ = read_unsynced_data;
+  }
+  bool ReadUnsyncedData() const { return read_unsynced_data_; }
+
+  // FaultInjectionTestFS normally includes a hygiene check for FileSystem
+  // implementations that only support LinkFile() on closed files (not open
+  // for write). Setting this to true bypasses the check.
+  void SetAllowLinkOpenFile(bool allow_link_open_file = true) {
+    allow_link_open_file_ = allow_link_open_file;
+  }
+
   void AssertNoOpenFile() { assert(open_managed_files_.empty()); }
 
   IOStatus GetError() { return error_; }
@@ -372,12 +402,12 @@ class FaultInjectionTestFS : public FileSystemWrapper {
 
   void SetChecksumHandoffFuncType(const ChecksumType& func_type) {
     MutexLock l(&mutex_);
-    checksum_handoff_func_tpye_ = func_type;
+    checksum_handoff_func_type_ = func_type;
   }
 
   const ChecksumType& GetChecksumHandoffFuncType() {
     MutexLock l(&mutex_);
-    return checksum_handoff_func_tpye_;
+    return checksum_handoff_func_type_;
   }
 
   void SetFailGetUniqueId(bool flag) {
@@ -402,7 +432,8 @@ class FaultInjectionTestFS : public FileSystemWrapper {
   // seed is the seed for the random number generator, and one_in determines
   // the probability of injecting error (i.e an error is injected with
   // 1/one_in probability)
-  void SetThreadLocalReadErrorContext(uint32_t seed, int one_in) {
+  void SetThreadLocalReadErrorContext(uint32_t seed, int one_in,
+                                      bool retryable) {
     struct ErrorContext* ctx =
         static_cast<struct ErrorContext*>(thread_local_error_->Get());
     if (ctx == nullptr) {
@@ -411,6 +442,7 @@ class FaultInjectionTestFS : public FileSystemWrapper {
     }
     ctx->one_in = one_in;
     ctx->count = 0;
+    ctx->retryable = retryable;
   }
 
   static void DeleteThreadLocalErrorContext(void* p) {
@@ -437,9 +469,9 @@ class FaultInjectionTestFS : public FileSystemWrapper {
     write_error_allowed_types_ = types;
   }
 
-  void SetSkipDirectWritableTypes(const std::set<FileType>& types) {
+  void SetDirectWritableTypes(const std::set<FileType>& types) {
     MutexLock l(&mutex_);
-    skip_direct_writable_types_ = types;
+    direct_writable_types_ = types;
   }
 
   void SetRandomMetadataWriteError(int one_in) {
@@ -450,8 +482,8 @@ class FaultInjectionTestFS : public FileSystemWrapper {
   void SetRandomReadError(int one_in) { read_error_one_in_ = one_in; }
 
   bool ShouldInjectRandomReadError() {
-    return read_error_one_in() &&
-           Random::GetTLSInstance()->OneIn(read_error_one_in());
+    auto one_in = read_error_one_in();
+    return one_in > 0 && Random::GetTLSInstance()->OneIn(one_in);
   }
 
   // Inject an write error with randomlized parameter and the predefined
@@ -525,6 +557,9 @@ class FaultInjectionTestFS : public FileSystemWrapper {
   // saved callstack
   void PrintFaultBacktrace();
 
+  void AddUnsyncedToRead(const std::string& fname, size_t offset, size_t n,
+                         Slice* result, char* scratch);
+
  private:
   port::Mutex mutex_;
   std::map<std::string, FSFileState> db_file_state_;
@@ -538,6 +573,8 @@ class FaultInjectionTestFS : public FileSystemWrapper {
   bool filesystem_active_;    // Record flushes, syncs, writes
   bool filesystem_writable_;  // Bypass FaultInjectionTestFS and go directly
                               // to underlying FS for writable files
+  bool read_unsynced_data_;   // See SetReadUnsyncedData()
+  bool allow_link_open_file_;  // See SetAllowLinkOpenFile()
   IOStatus error_;
 
   enum ErrorType : int {
@@ -556,12 +593,14 @@ class FaultInjectionTestFS : public FileSystemWrapper {
     std::string message;
     int frames;
     ErrorType type;
+    bool retryable;
 
     explicit ErrorContext(uint32_t seed)
         : rand(seed),
           enable_error_injection(false),
           callstack(nullptr),
-          frames(0) {}
+          frames(0),
+          retryable(false) {}
     ~ErrorContext() {
       if (callstack) {
         free(callstack);
@@ -579,9 +618,9 @@ class FaultInjectionTestFS : public FileSystemWrapper {
   bool inject_for_all_file_types_;
   std::vector<FileType> write_error_allowed_types_;
   // File types where direct writable is skipped.
-  std::set<FileType> skip_direct_writable_types_;
+  std::set<FileType> direct_writable_types_;
   bool ingest_data_corruption_before_write_;
-  ChecksumType checksum_handoff_func_tpye_;
+  ChecksumType checksum_handoff_func_type_;
   bool fail_get_file_unique_id_;
 
   // Extract number of type from file name. Return false if failing to fine

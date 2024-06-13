@@ -4,7 +4,6 @@
 //  (found in the LICENSE.Apache file in the root directory).
 
 #pragma once
-#ifndef ROCKSDB_LITE
 #include <atomic>
 #include <memory>
 
@@ -81,10 +80,8 @@ class CompactOnDeletionCollectorFactory
 //     the specified number for "D" will not be changed.
 // @param deletion_ratio, if <= 0 or > 1, disable triggering compaction
 //     based on deletion ratio. Disabled by default.
-extern std::shared_ptr<CompactOnDeletionCollectorFactory>
+std::shared_ptr<CompactOnDeletionCollectorFactory>
 NewCompactOnDeletionCollectorFactory(size_t sliding_window_size,
                                      size_t deletion_trigger,
                                      double deletion_ratio = 0);
 }  // namespace ROCKSDB_NAMESPACE
-
-#endif  // !ROCKSDB_LITE

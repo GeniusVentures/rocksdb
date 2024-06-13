@@ -23,14 +23,15 @@
 #ifdef GFLAGS
 #include "db_stress_tool/db_stress_common.h"
 #include "db_stress_tool/db_stress_driver.h"
+#include "db_stress_tool/db_stress_shared_state.h"
 #include "rocksdb/convenience.h"
 #include "utilities/fault_injection_fs.h"
 
 namespace ROCKSDB_NAMESPACE {
 namespace {
 static std::shared_ptr<ROCKSDB_NAMESPACE::Env> env_guard;
-static std::shared_ptr<ROCKSDB_NAMESPACE::CompositeEnvWrapper>
-    env_wrapper_guard;
+static std::shared_ptr<ROCKSDB_NAMESPACE::Env> env_wrapper_guard;
+static std::shared_ptr<ROCKSDB_NAMESPACE::Env> legacy_env_wrapper_guard;
 static std::shared_ptr<ROCKSDB_NAMESPACE::CompositeEnvWrapper>
     dbsl_env_wrapper_guard;
 static std::shared_ptr<CompositeEnvWrapper> fault_env_guard;
@@ -87,11 +88,15 @@ int db_stress_tool(int argc, char** argv) {
     FaultInjectionTestFS* fs =
         new FaultInjectionTestFS(raw_env->GetFileSystem());
     fault_fs_guard.reset(fs);
-    if (FLAGS_write_fault_one_in) {
-      fault_fs_guard->SetFilesystemDirectWritable(false);
-    } else {
-      fault_fs_guard->SetFilesystemDirectWritable(true);
-    }
+    // Set it to direct writable here to not lose files created during DB open
+    // when no open fault injection is not enabled.
+    // This will be overwritten in StressTest::Open() for open fault injection
+    // and in RunStressTestImpl() for proper write fault injection setup.
+    fault_fs_guard->SetFilesystemDirectWritable(true);
+    // FIXME: For some reason(s), db_stress currently relies on the WRONG
+    // semantic of reading only synced data from files currently open for
+    // write.
+    fault_fs_guard->SetReadUnsyncedData(false);
     fault_env_guard =
         std::make_shared<CompositeEnvWrapper>(raw_env, fault_fs_guard);
     raw_env = fault_env_guard.get();
@@ -228,10 +233,10 @@ int db_stress_tool(int argc, char** argv) {
     FLAGS_secondaries_base = default_secondaries_path;
   }
 
-  if (FLAGS_best_efforts_recovery && !FLAGS_skip_verifydb &&
-      !FLAGS_disable_wal) {
+  if (FLAGS_best_efforts_recovery &&
+      !(FLAGS_skip_verifydb && FLAGS_disable_wal)) {
     fprintf(stderr,
-            "With best-efforts recovery, either skip_verifydb or disable_wal "
+            "With best-efforts recovery, skip_verifydb and disable_wal "
             "should be set to true.\n");
     exit(1);
   }
@@ -248,18 +253,30 @@ int db_stress_tool(int argc, char** argv) {
       exit(1);
     }
   }
-  if (FLAGS_enable_compaction_filter &&
+  if ((FLAGS_enable_compaction_filter || FLAGS_inplace_update_support) &&
       (FLAGS_acquire_snapshot_one_in > 0 || FLAGS_compact_range_one_in > 0 ||
-       FLAGS_iterpercent > 0 || FLAGS_test_batches_snapshots ||
-       FLAGS_test_cf_consistency)) {
+       FLAGS_iterpercent > 0 || FLAGS_prefixpercent > 0 ||
+       FLAGS_test_batches_snapshots || FLAGS_test_cf_consistency ||
+       FLAGS_check_multiget_consistency ||
+       FLAGS_check_multiget_entity_consistency)) {
     fprintf(
         stderr,
         "Error: acquire_snapshot_one_in, compact_range_one_in, iterpercent, "
-        "test_batches_snapshots  must all be 0 when using compaction filter\n");
+        "prefixpercent, test_batches_snapshots, test_cf_consistency, "
+        "check_multiget_consistency, check_multiget_entity_consistency must "
+        "all be 0 when using compaction filter or inplace update support\n");
     exit(1);
   }
   if (FLAGS_test_multi_ops_txns) {
     CheckAndSetOptionsForMultiOpsTxnStressTest();
+  }
+
+  if (!FLAGS_use_txn && FLAGS_use_optimistic_txn) {
+    fprintf(
+        stderr,
+        "You cannot set use_optimistic_txn true while use_txn is false. Please "
+        "set use_txn true if you want to use OptimisticTransactionDB\n");
+    exit(1);
   }
 
   if (FLAGS_create_timestamped_snapshot_one_in > 0) {
@@ -279,8 +296,8 @@ int db_stress_tool(int argc, char** argv) {
     exit(1);
   }
 
-  if (FLAGS_use_txn && FLAGS_sync_fault_injection &&
-      FLAGS_txn_write_policy != 0) {
+  if (FLAGS_use_txn && !FLAGS_use_optimistic_txn &&
+      FLAGS_sync_fault_injection && FLAGS_txn_write_policy != 0) {
     fprintf(stderr,
             "For TransactionDB, correctness testing with unsync data loss is "
             "currently compatible with only write committed policy\n");
@@ -288,12 +305,11 @@ int db_stress_tool(int argc, char** argv) {
   }
 
   if (FLAGS_use_put_entity_one_in > 0 &&
-      (FLAGS_ingest_external_file_one_in > 0 || FLAGS_use_merge ||
-       FLAGS_use_full_merge_v1 || FLAGS_use_txn || FLAGS_test_multi_ops_txns ||
+      (FLAGS_use_full_merge_v1 || FLAGS_test_multi_ops_txns ||
        FLAGS_user_timestamp_size > 0)) {
     fprintf(stderr,
-            "PutEntity is currently incompatible with SstFileWriter, Merge,"
-            " transactions, and user-defined timestamps\n");
+            "Wide columns are incompatible with V1 Merge, the multi-op "
+            "transaction test, and user-defined timestamps\n");
     exit(1);
   }
 
@@ -334,7 +350,7 @@ int db_stress_tool(int argc, char** argv) {
     key_gen_ctx.weights.emplace_back(key_gen_ctx.window -
                                      keys_per_level * (levels - 1));
   }
-
+  std::unique_ptr<ROCKSDB_NAMESPACE::SharedState> shared;
   std::unique_ptr<ROCKSDB_NAMESPACE::StressTest> stress;
   if (FLAGS_test_cf_consistency) {
     stress.reset(CreateCfConsistencyStressTest());
@@ -347,7 +363,8 @@ int db_stress_tool(int argc, char** argv) {
   }
   // Initialize the Zipfian pre-calculated array
   InitializeHotKeyGenerator(FLAGS_hot_key_alpha);
-  if (RunStressTest(stress.get())) {
+  shared.reset(new SharedState(db_stress_env, stress.get()));
+  if (RunStressTest(shared.get())) {
     return 0;
   } else {
     return 1;

@@ -4,7 +4,6 @@
 //  (found in the LICENSE.Apache file in the root directory).
 
 #pragma once
-#ifndef ROCKSDB_LITE
 
 #include <string>
 #include <utility>
@@ -136,7 +135,7 @@ class RangeLockManagerHandle : public LockManagerHandle {
   virtual std::vector<RangeDeadlockPath> GetRangeDeadlockInfoBuffer() = 0;
   virtual void SetRangeDeadlockInfoBufferSize(uint32_t target_size) = 0;
 
-  virtual ~RangeLockManagerHandle() {}
+  ~RangeLockManagerHandle() override {}
 };
 
 // A factory function to create a Range Lock Manager. The created object should
@@ -391,8 +390,8 @@ class TransactionDB : public StackableDB {
   // WRITE_PREPARED or WRITE_UNPREPARED , `skip_duplicate_key_check` must
   // additionally be set.
   using StackableDB::DeleteRange;
-  virtual Status DeleteRange(const WriteOptions&, ColumnFamilyHandle*,
-                             const Slice&, const Slice&) override {
+  Status DeleteRange(const WriteOptions&, ColumnFamilyHandle*, const Slice&,
+                     const Slice&) override {
     return Status::NotSupported();
   }
   // Open a TransactionDB similar to DB::Open().
@@ -504,5 +503,3 @@ class TransactionDB : public StackableDB {
 };
 
 }  // namespace ROCKSDB_NAMESPACE
-
-#endif  // ROCKSDB_LITE
