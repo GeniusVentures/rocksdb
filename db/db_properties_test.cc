@@ -166,30 +166,74 @@ TEST_F(DBPropertiesTest, GetAggregatedIntPropertyTest) {
   uint64_t api_sum = 0;
   uint64_t value = 0;
   for (auto* handle : handles_) {
-    ASSERT_TRUE(
-        db_->GetIntProperty(handle, DB::Properties::kSizeAllMemTables, &value));
+    ASSERT_TRUE(db_->GetIntProperty(
+        handle, DB::Properties::GetSizeAllMemTables(), &value));
     manual_sum += value;
   }
-  ASSERT_TRUE(db_->GetAggregatedIntProperty(DB::Properties::kSizeAllMemTables,
-                                            &api_sum));
+  ASSERT_TRUE(db_->GetAggregatedIntProperty(
+      DB::Properties::GetSizeAllMemTables(), &api_sum));
   ASSERT_GT(manual_sum, 0);
   ASSERT_EQ(manual_sum, api_sum);
 
-  ASSERT_FALSE(db_->GetAggregatedIntProperty(DB::Properties::kDBStats, &value));
+  ASSERT_FALSE(
+      db_->GetAggregatedIntProperty(DB::Properties::GetDBStats(), &value));
 
   uint64_t before_flush_trm;
   uint64_t after_flush_trm;
   for (auto* handle : handles_) {
     ASSERT_TRUE(db_->GetAggregatedIntProperty(
-        DB::Properties::kEstimateTableReadersMem, &before_flush_trm));
+        DB::Properties::GetEstimateTableReadersMem(), &before_flush_trm));
 
     // Issue flush and expect larger memory usage of table readers.
     ASSERT_OK(db_->Flush(FlushOptions(), handle));
 
     ASSERT_TRUE(db_->GetAggregatedIntProperty(
-        DB::Properties::kEstimateTableReadersMem, &after_flush_trm));
+        DB::Properties::GetEstimateTableReadersMem(), &after_flush_trm));
     ASSERT_GT(after_flush_trm, before_flush_trm);
   }
+}
+
+TEST_F(DBPropertiesTest, AggregateBlockCacheProperty) {
+  constexpr size_t kCapacity = 1000;
+  LRUCacheOptions co;
+  co.capacity = kCapacity;
+  co.num_shard_bits = 0;
+  co.metadata_charge_policy = kDontChargeCacheMetadata;
+  auto block_cache = NewLRUCache(co);
+
+  // All columns families share the same block cache.
+  Options options = CurrentOptions();
+  BlockBasedTableOptions table_opt;
+  table_opt.no_block_cache = false;
+  table_opt.block_cache = block_cache;
+  options.table_factory.reset(NewBlockBasedTableFactory(table_opt));
+
+  CreateAndReopenWithCF({"one", "two", "three", "four"}, options);
+
+  // Insert unpinned block to the cache
+  constexpr size_t kSize1 = 100;
+  ASSERT_OK(block_cache->Insert("block1", nullptr /*value*/,
+                                &kNoopCacheItemHelper, kSize1));
+  // Insert pinned block to the cache
+  constexpr size_t kSize2 = 200;
+  Cache::Handle* block2 = nullptr;
+  ASSERT_OK(block_cache->Insert("block2", nullptr /*value*/,
+                                &kNoopCacheItemHelper, kSize2, &block2));
+
+  uint64_t value;
+  ASSERT_TRUE(db_->GetAggregatedIntProperty(
+      DB::Properties::GetBlockCacheCapacity(), &value));
+  ASSERT_EQ(value, kCapacity);
+
+  ASSERT_TRUE(db_->GetAggregatedIntProperty(
+      DB::Properties::GetBlockCacheUsage(), &value));
+  ASSERT_EQ(value, kSize1 + kSize2);
+
+  ASSERT_TRUE(db_->GetAggregatedIntProperty(
+      DB::Properties::GetBlockCachePinnedUsage(), &value));
+  ASSERT_EQ(value, kSize2);
+
+  block_cache->Release(block2);
 }
 
 namespace {
@@ -270,7 +314,7 @@ void GetExpectedTableProperties(
 }  // anonymous namespace
 
 TEST_F(DBPropertiesTest, ValidatePropertyInfo) {
-  for (const auto& ppt_name_and_info : InternalStats::ppt_name_to_info) {
+  for (const auto& ppt_name_and_info : InternalStats::GetPptNameToInfo()) {
     // If C++ gets a std::string_literal, this would be better to check at
     // compile-time using static_assert.
     ASSERT_TRUE(ppt_name_and_info.first.empty() ||
@@ -364,7 +408,7 @@ TEST_F(DBPropertiesTest, AggregatedTableProperties) {
       ASSERT_OK(db_->Flush(FlushOptions()));
     }
     std::string property;
-    db_->GetProperty(DB::Properties::kAggregatedTableProperties, &property);
+    db_->GetProperty(DB::Properties::GetAggregatedTableProperties(), &property);
     TableProperties output_tp;
     ParseTablePropertiesString(property, &output_tp);
     bool index_key_is_user_key = output_tp.index_key_is_user_key > 0;
@@ -566,7 +610,7 @@ TEST_F(DBPropertiesTest, AggregatedTablePropertiesAtLevel) {
     ASSERT_OK(db_->CompactRange(CompactRangeOptions(), nullptr, nullptr));
     ResetTableProperties(&sum_tp);
     for (int level = 0; level < kMaxLevel; ++level) {
-      db_->GetProperty(DB::Properties::kAggregatedTablePropertiesAtLevel +
+      db_->GetProperty(DB::Properties::GetAggregatedTablePropertiesAtLevel() +
                            std::to_string(level),
                        &level_tp_strings[level]);
       ParseTablePropertiesString(level_tp_strings[level], &level_tps[level]);
@@ -581,7 +625,8 @@ TEST_F(DBPropertiesTest, AggregatedTablePropertiesAtLevel) {
       sum_tp.num_merge_operands += level_tps[level].num_merge_operands;
       sum_tp.num_range_deletions += level_tps[level].num_range_deletions;
     }
-    db_->GetProperty(DB::Properties::kAggregatedTableProperties, &tp_string);
+    db_->GetProperty(DB::Properties::GetAggregatedTableProperties(),
+                     &tp_string);
     ParseTablePropertiesString(tp_string, &tp);
     bool index_key_is_user_key = tp.index_key_is_user_key > 0;
     bool value_is_delta_encoded = tp.index_value_is_delta_encoded > 0;
@@ -632,7 +677,7 @@ TEST_F(DBPropertiesTest, NumImmutableMemTable) {
                                       "rocksdb.num-immutable-mem-table", &num));
     ASSERT_EQ(num, "0");
     ASSERT_TRUE(dbfull()->GetProperty(
-        handles_[1], DB::Properties::kNumImmutableMemTableFlushed, &num));
+        handles_[1], DB::Properties::GetNumImmutableMemTableFlushed(), &num));
     ASSERT_EQ(num, "0");
     ASSERT_TRUE(dbfull()->GetProperty(
         handles_[1], "rocksdb.num-entries-active-mem-table", &num));
@@ -686,7 +731,7 @@ TEST_F(DBPropertiesTest, NumImmutableMemTable) {
                                       "rocksdb.num-immutable-mem-table", &num));
     ASSERT_EQ(num, "0");
     ASSERT_TRUE(dbfull()->GetProperty(
-        handles_[1], DB::Properties::kNumImmutableMemTableFlushed, &num));
+        handles_[1], DB::Properties::GetNumImmutableMemTableFlushed(), &num));
     ASSERT_EQ(num, "3");
     ASSERT_TRUE(dbfull()->GetIntProperty(
         handles_[1], "rocksdb.cur-size-active-mem-table", &value));
@@ -1623,7 +1668,7 @@ TEST_F(DBPropertiesTest, EstimateOldestKeyTime) {
     DestroyAndReopen(options);
     ASSERT_OK(Put("foo", "bar"));
     ASSERT_FALSE(dbfull()->GetIntProperty(
-        DB::Properties::kEstimateOldestKeyTime, &oldest_key_time));
+        DB::Properties::GetEstimateOldestKeyTime(), &oldest_key_time));
   }
 
   int64_t mock_start_time;
@@ -1637,50 +1682,50 @@ TEST_F(DBPropertiesTest, EstimateOldestKeyTime) {
 
   env_->MockSleepForSeconds(100);
   ASSERT_OK(Put("k1", "v1"));
-  ASSERT_TRUE(dbfull()->GetIntProperty(DB::Properties::kEstimateOldestKeyTime,
-                                       &oldest_key_time));
+  ASSERT_TRUE(dbfull()->GetIntProperty(
+      DB::Properties::GetEstimateOldestKeyTime(), &oldest_key_time));
   ASSERT_EQ(100, oldest_key_time - mock_start_time);
   ASSERT_OK(Flush());
   ASSERT_EQ("1", FilesPerLevel());
-  ASSERT_TRUE(dbfull()->GetIntProperty(DB::Properties::kEstimateOldestKeyTime,
-                                       &oldest_key_time));
+  ASSERT_TRUE(dbfull()->GetIntProperty(
+      DB::Properties::GetEstimateOldestKeyTime(), &oldest_key_time));
   ASSERT_EQ(100, oldest_key_time - mock_start_time);
 
   env_->MockSleepForSeconds(100);  // -> 200
   ASSERT_OK(Put("k2", "v2"));
   ASSERT_OK(Flush());
   ASSERT_EQ("2", FilesPerLevel());
-  ASSERT_TRUE(dbfull()->GetIntProperty(DB::Properties::kEstimateOldestKeyTime,
-                                       &oldest_key_time));
+  ASSERT_TRUE(dbfull()->GetIntProperty(
+      DB::Properties::GetEstimateOldestKeyTime(), &oldest_key_time));
   ASSERT_EQ(100, oldest_key_time - mock_start_time);
 
   env_->MockSleepForSeconds(100);  // -> 300
   ASSERT_OK(Put("k3", "v3"));
   ASSERT_OK(Flush());
   ASSERT_EQ("3", FilesPerLevel());
-  ASSERT_TRUE(dbfull()->GetIntProperty(DB::Properties::kEstimateOldestKeyTime,
-                                       &oldest_key_time));
+  ASSERT_TRUE(dbfull()->GetIntProperty(
+      DB::Properties::GetEstimateOldestKeyTime(), &oldest_key_time));
   ASSERT_EQ(100, oldest_key_time - mock_start_time);
 
   env_->MockSleepForSeconds(150);  // -> 450
   ASSERT_OK(dbfull()->CompactRange(CompactRangeOptions(), nullptr, nullptr));
   ASSERT_EQ("2", FilesPerLevel());
-  ASSERT_TRUE(dbfull()->GetIntProperty(DB::Properties::kEstimateOldestKeyTime,
-                                       &oldest_key_time));
+  ASSERT_TRUE(dbfull()->GetIntProperty(
+      DB::Properties::GetEstimateOldestKeyTime(), &oldest_key_time));
   ASSERT_EQ(200, oldest_key_time - mock_start_time);
 
   env_->MockSleepForSeconds(100);  // -> 550
   ASSERT_OK(dbfull()->CompactRange(CompactRangeOptions(), nullptr, nullptr));
   ASSERT_EQ("1", FilesPerLevel());
-  ASSERT_TRUE(dbfull()->GetIntProperty(DB::Properties::kEstimateOldestKeyTime,
-                                       &oldest_key_time));
+  ASSERT_TRUE(dbfull()->GetIntProperty(
+      DB::Properties::GetEstimateOldestKeyTime(), &oldest_key_time));
   ASSERT_EQ(300, oldest_key_time - mock_start_time);
 
   env_->MockSleepForSeconds(100);  // -> 650
   ASSERT_OK(dbfull()->CompactRange(CompactRangeOptions(), nullptr, nullptr));
   ASSERT_EQ("", FilesPerLevel());
-  ASSERT_FALSE(dbfull()->GetIntProperty(DB::Properties::kEstimateOldestKeyTime,
-                                        &oldest_key_time));
+  ASSERT_FALSE(dbfull()->GetIntProperty(
+      DB::Properties::GetEstimateOldestKeyTime(), &oldest_key_time));
 }
 
 TEST_F(DBPropertiesTest, SstFilesSize) {
@@ -1692,13 +1737,13 @@ TEST_F(DBPropertiesTest, SstFilesSize) {
       callback_triggered = true;
       uint64_t total_sst_size = 0;
       uint64_t live_sst_size = 0;
-      bool ok = db->GetIntProperty(DB::Properties::kTotalSstFilesSize,
+      bool ok = db->GetIntProperty(DB::Properties::GetTotalSstFilesSize(),
                                    &total_sst_size);
       ASSERT_TRUE(ok);
       // total_sst_size include files before and after compaction.
       ASSERT_GT(total_sst_size, size_before_compaction);
-      ok =
-          db->GetIntProperty(DB::Properties::kLiveSstFilesSize, &live_sst_size);
+      ok = db->GetIntProperty(DB::Properties::GetLiveSstFilesSize(),
+                              &live_sst_size);
       ASSERT_TRUE(ok);
       // live_sst_size only include files after compaction.
       ASSERT_GT(live_sst_size, 0);
@@ -1727,12 +1772,12 @@ TEST_F(DBPropertiesTest, SstFilesSize) {
 
   uint64_t sst_size;
   ASSERT_TRUE(
-      db_->GetIntProperty(DB::Properties::kTotalSstFilesSize, &sst_size));
+      db_->GetIntProperty(DB::Properties::GetTotalSstFilesSize(), &sst_size));
   ASSERT_GT(sst_size, 0);
   listener->size_before_compaction = sst_size;
 
   uint64_t obsolete_sst_size;
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kObsoleteSstFilesSize,
+  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::GetObsoleteSstFilesSize(),
                                   &obsolete_sst_size));
   ASSERT_EQ(obsolete_sst_size, 0);
 
@@ -1744,13 +1789,13 @@ TEST_F(DBPropertiesTest, SstFilesSize) {
   ASSERT_OK(db_->CompactRange(CompactRangeOptions(), nullptr, nullptr));
   ASSERT_TRUE(listener->callback_triggered);
 
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kObsoleteSstFilesSize,
+  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::GetObsoleteSstFilesSize(),
                                   &obsolete_sst_size));
   ASSERT_EQ(obsolete_sst_size, sst_size);
 
   // Let the obsolete files be deleted.
   ASSERT_OK(db_->EnableFileDeletions());
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kObsoleteSstFilesSize,
+  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::GetObsoleteSstFilesSize(),
                                   &obsolete_sst_size));
   ASSERT_EQ(obsolete_sst_size, 0);
 }
@@ -1772,7 +1817,7 @@ TEST_F(DBPropertiesTest, MinObsoleteSstNumberToKeep) {
 
         uint64_t keep_sst_lower_bound;
         ASSERT_TRUE(
-            db_->GetIntProperty(DB::Properties::kMinObsoleteSstNumberToKeep,
+            db_->GetIntProperty(DB::Properties::GetMinObsoleteSstNumberToKeep(),
                                 &keep_sst_lower_bound));
 
         ASSERT_LE(keep_sst_lower_bound, created_file_num);
@@ -1830,24 +1875,26 @@ TEST_F(DBPropertiesTest, BlobCacheProperties) {
 
   Reopen(options);
 
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlobCacheCapacity, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlobCacheCapacity(), &value));
   ASSERT_EQ(kCapacity, value);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlobCacheUsage, &value));
+  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::GetBlobCacheUsage(), &value));
   ASSERT_EQ(0, value);
   ASSERT_TRUE(
-      db_->GetIntProperty(DB::Properties::kBlobCachePinnedUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlobCachePinnedUsage(), &value));
   ASSERT_EQ(0, value);
 
   // Insert unpinned blob to the cache and check size.
   constexpr size_t kSize1 = 70;
   ASSERT_OK(blob_cache->Insert("blob1", nullptr /*value*/,
                                &kNoopCacheItemHelper, kSize1));
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlobCacheCapacity, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlobCacheCapacity(), &value));
   ASSERT_EQ(kCapacity, value);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlobCacheUsage, &value));
+  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::GetBlobCacheUsage(), &value));
   ASSERT_EQ(kSize1, value);
   ASSERT_TRUE(
-      db_->GetIntProperty(DB::Properties::kBlobCachePinnedUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlobCachePinnedUsage(), &value));
   ASSERT_EQ(0, value);
 
   // Insert pinned blob to the cache and check size.
@@ -1856,13 +1903,14 @@ TEST_F(DBPropertiesTest, BlobCacheProperties) {
   ASSERT_OK(blob_cache->Insert("blob2", nullptr /*value*/,
                                &kNoopCacheItemHelper, kSize2, &blob2));
   ASSERT_NE(nullptr, blob2);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlobCacheCapacity, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlobCacheCapacity(), &value));
   ASSERT_EQ(kCapacity, value);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlobCacheUsage, &value));
+  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::GetBlobCacheUsage(), &value));
   // blob1 is evicted.
   ASSERT_EQ(kSize2, value);
   ASSERT_TRUE(
-      db_->GetIntProperty(DB::Properties::kBlobCachePinnedUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlobCachePinnedUsage(), &value));
   ASSERT_EQ(kSize2, value);
 
   // Insert another pinned blob to make the cache over-sized.
@@ -1871,24 +1919,26 @@ TEST_F(DBPropertiesTest, BlobCacheProperties) {
   ASSERT_OK(blob_cache->Insert("blob3", nullptr /*value*/,
                                &kNoopCacheItemHelper, kSize3, &blob3));
   ASSERT_NE(nullptr, blob3);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlobCacheCapacity, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlobCacheCapacity(), &value));
   ASSERT_EQ(kCapacity, value);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlobCacheUsage, &value));
+  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::GetBlobCacheUsage(), &value));
   ASSERT_EQ(kSize2 + kSize3, value);
   ASSERT_TRUE(
-      db_->GetIntProperty(DB::Properties::kBlobCachePinnedUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlobCachePinnedUsage(), &value));
   ASSERT_EQ(kSize2 + kSize3, value);
 
   // Check size after release.
   blob_cache->Release(blob2);
   blob_cache->Release(blob3);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlobCacheCapacity, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlobCacheCapacity(), &value));
   ASSERT_EQ(kCapacity, value);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlobCacheUsage, &value));
+  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::GetBlobCacheUsage(), &value));
   // blob2 will be evicted, while blob3 remain in cache after release.
   ASSERT_EQ(kSize3, value);
   ASSERT_TRUE(
-      db_->GetIntProperty(DB::Properties::kBlobCachePinnedUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlobCachePinnedUsage(), &value));
   ASSERT_EQ(0, value);
 }
 
@@ -1903,18 +1953,20 @@ TEST_F(DBPropertiesTest, BlockCacheProperties) {
   options.table_factory.reset(NewPlainTableFactory());
   Reopen(options);
   ASSERT_FALSE(
-      db_->GetIntProperty(DB::Properties::kBlockCacheCapacity, &value));
-  ASSERT_FALSE(db_->GetIntProperty(DB::Properties::kBlockCacheUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlockCacheCapacity(), &value));
   ASSERT_FALSE(
-      db_->GetIntProperty(DB::Properties::kBlockCachePinnedUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlockCacheUsage(), &value));
+  ASSERT_FALSE(
+      db_->GetIntProperty(DB::Properties::GetBlockCachePinnedUsage(), &value));
 
   options.table_factory.reset(NewCuckooTableFactory());
   Reopen(options);
   ASSERT_FALSE(
-      db_->GetIntProperty(DB::Properties::kBlockCacheCapacity, &value));
-  ASSERT_FALSE(db_->GetIntProperty(DB::Properties::kBlockCacheUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlockCacheCapacity(), &value));
   ASSERT_FALSE(
-      db_->GetIntProperty(DB::Properties::kBlockCachePinnedUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlockCacheUsage(), &value));
+  ASSERT_FALSE(
+      db_->GetIntProperty(DB::Properties::GetBlockCachePinnedUsage(), &value));
 
   // Block cache properties are not available if block cache is not used.
   BlockBasedTableOptions table_options;
@@ -1922,10 +1974,11 @@ TEST_F(DBPropertiesTest, BlockCacheProperties) {
   options.table_factory.reset(NewBlockBasedTableFactory(table_options));
   Reopen(options);
   ASSERT_FALSE(
-      db_->GetIntProperty(DB::Properties::kBlockCacheCapacity, &value));
-  ASSERT_FALSE(db_->GetIntProperty(DB::Properties::kBlockCacheUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlockCacheCapacity(), &value));
   ASSERT_FALSE(
-      db_->GetIntProperty(DB::Properties::kBlockCachePinnedUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlockCacheUsage(), &value));
+  ASSERT_FALSE(
+      db_->GetIntProperty(DB::Properties::GetBlockCachePinnedUsage(), &value));
 
   // Test with empty block cache.
   constexpr size_t kCapacity = 100;
@@ -1938,24 +1991,28 @@ TEST_F(DBPropertiesTest, BlockCacheProperties) {
   table_options.no_block_cache = false;
   options.table_factory.reset(NewBlockBasedTableFactory(table_options));
   Reopen(options);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlockCacheCapacity, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlockCacheCapacity(), &value));
   ASSERT_EQ(kCapacity, value);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlockCacheUsage, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlockCacheUsage(), &value));
   ASSERT_EQ(0, value);
   ASSERT_TRUE(
-      db_->GetIntProperty(DB::Properties::kBlockCachePinnedUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlockCachePinnedUsage(), &value));
   ASSERT_EQ(0, value);
 
   // Insert unpinned item to the cache and check size.
   constexpr size_t kSize1 = 50;
   ASSERT_OK(block_cache->Insert("item1", nullptr /*value*/,
                                 &kNoopCacheItemHelper, kSize1));
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlockCacheCapacity, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlockCacheCapacity(), &value));
   ASSERT_EQ(kCapacity, value);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlockCacheUsage, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlockCacheUsage(), &value));
   ASSERT_EQ(kSize1, value);
   ASSERT_TRUE(
-      db_->GetIntProperty(DB::Properties::kBlockCachePinnedUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlockCachePinnedUsage(), &value));
   ASSERT_EQ(0, value);
 
   // Insert pinned item to the cache and check size.
@@ -1964,12 +2021,14 @@ TEST_F(DBPropertiesTest, BlockCacheProperties) {
   ASSERT_OK(block_cache->Insert("item2", nullptr /*value*/,
                                 &kNoopCacheItemHelper, kSize2, &item2));
   ASSERT_NE(nullptr, item2);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlockCacheCapacity, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlockCacheCapacity(), &value));
   ASSERT_EQ(kCapacity, value);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlockCacheUsage, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlockCacheUsage(), &value));
   ASSERT_EQ(kSize1 + kSize2, value);
   ASSERT_TRUE(
-      db_->GetIntProperty(DB::Properties::kBlockCachePinnedUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlockCachePinnedUsage(), &value));
   ASSERT_EQ(kSize2, value);
 
   // Insert another pinned item to make the cache over-sized.
@@ -1978,25 +2037,29 @@ TEST_F(DBPropertiesTest, BlockCacheProperties) {
   ASSERT_OK(block_cache->Insert("item3", nullptr /*value*/,
                                 &kNoopCacheItemHelper, kSize3, &item3));
   ASSERT_NE(nullptr, item2);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlockCacheCapacity, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlockCacheCapacity(), &value));
   ASSERT_EQ(kCapacity, value);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlockCacheUsage, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlockCacheUsage(), &value));
   // Item 1 is evicted.
   ASSERT_EQ(kSize2 + kSize3, value);
   ASSERT_TRUE(
-      db_->GetIntProperty(DB::Properties::kBlockCachePinnedUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlockCachePinnedUsage(), &value));
   ASSERT_EQ(kSize2 + kSize3, value);
 
   // Check size after release.
   block_cache->Release(item2);
   block_cache->Release(item3);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlockCacheCapacity, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlockCacheCapacity(), &value));
   ASSERT_EQ(kCapacity, value);
-  ASSERT_TRUE(db_->GetIntProperty(DB::Properties::kBlockCacheUsage, &value));
+  ASSERT_TRUE(
+      db_->GetIntProperty(DB::Properties::GetBlockCacheUsage(), &value));
   // item2 will be evicted, while item3 remain in cache after release.
   ASSERT_EQ(kSize3, value);
   ASSERT_TRUE(
-      db_->GetIntProperty(DB::Properties::kBlockCachePinnedUsage, &value));
+      db_->GetIntProperty(DB::Properties::GetBlockCachePinnedUsage(), &value));
   ASSERT_EQ(0, value);
 }
 
@@ -2010,7 +2073,7 @@ TEST_F(DBPropertiesTest, GetMapPropertyDbStats) {
 
   {
     std::map<std::string, std::string> db_stats;
-    ASSERT_TRUE(db_->GetMapProperty(DB::Properties::kDBStats, &db_stats));
+    ASSERT_TRUE(db_->GetMapProperty(DB::Properties::GetDBStats(), &db_stats));
     AssertDbStats(db_stats, 0.0 /* expected_uptime */,
                   0 /* expected_user_bytes_written */,
                   0 /* expected_wal_bytes_written */,
@@ -2022,7 +2085,7 @@ TEST_F(DBPropertiesTest, GetMapPropertyDbStats) {
     mock_clock->SleepForMicroseconds(1500000);
 
     std::map<std::string, std::string> db_stats;
-    ASSERT_TRUE(db_->GetMapProperty(DB::Properties::kDBStats, &db_stats));
+    ASSERT_TRUE(db_->GetMapProperty(DB::Properties::GetDBStats(), &db_stats));
     AssertDbStats(db_stats, 1.5 /* expected_uptime */,
                   0 /* expected_user_bytes_written */,
                   0 /* expected_wal_bytes_written */,
@@ -2043,7 +2106,7 @@ TEST_F(DBPropertiesTest, GetMapPropertyDbStats) {
     ASSERT_OK(db_->Write(write_opts, &batch));
 
     std::map<std::string, std::string> db_stats;
-    ASSERT_TRUE(db_->GetMapProperty(DB::Properties::kDBStats, &db_stats));
+    ASSERT_TRUE(db_->GetMapProperty(DB::Properties::GetDBStats(), &db_stats));
     AssertDbStats(db_stats, 1.5 /* expected_uptime */,
                   expected_user_bytes_written,
                   0 /* expected_wal_bytes_written */,
@@ -2062,7 +2125,7 @@ TEST_F(DBPropertiesTest, GetMapPropertyDbStats) {
     ASSERT_OK(db_->Write(WriteOptions(), &batch));
 
     std::map<std::string, std::string> db_stats;
-    ASSERT_TRUE(db_->GetMapProperty(DB::Properties::kDBStats, &db_stats));
+    ASSERT_TRUE(db_->GetMapProperty(DB::Properties::GetDBStats(), &db_stats));
     AssertDbStats(db_stats, 1.5 /* expected_uptime */,
                   expected_user_bytes_written, expected_wal_bytes_written,
                   2 /* expected_user_writes_by_self */,
@@ -2076,7 +2139,7 @@ TEST_F(DBPropertiesTest, GetMapPropertyBlockCacheEntryStats) {
   // Currently only verifies the expected properties are present
   std::map<std::string, std::string> values;
   ASSERT_TRUE(
-      db_->GetMapProperty(DB::Properties::kBlockCacheEntryStats, &values));
+      db_->GetMapProperty(DB::Properties::GetBlockCacheEntryStats(), &values));
 
   ASSERT_TRUE(values.find(BlockCacheEntryStatsMapKeys::CacheId()) !=
               values.end());
@@ -2182,7 +2245,7 @@ TEST_F(DBPropertiesTest, GetMapPropertyWriteStallStats) {
 
     // Assert initial write stall stats are all 0
     std::map<std::string, std::string> db_values;
-    ASSERT_TRUE(dbfull()->GetMapProperty(DB::Properties::kDBWriteStallStats,
+    ASSERT_TRUE(dbfull()->GetMapProperty(DB::Properties::GetDBWriteStallStats(),
                                          &db_values));
     ASSERT_EQ(std::stoi(db_values[WriteStallStatsMapKeys::CauseConditionCount(
                   WriteStallCause::kWriteBufferManagerLimit,
@@ -2192,7 +2255,7 @@ TEST_F(DBPropertiesTest, GetMapPropertyWriteStallStats) {
     for (int cf = 0; cf <= 1; ++cf) {
       std::map<std::string, std::string> cf_values;
       ASSERT_TRUE(dbfull()->GetMapProperty(
-          handles_[cf], DB::Properties::kCFWriteStallStats, &cf_values));
+          handles_[cf], DB::Properties::GetCFWriteStallStats(), &cf_values));
       ASSERT_EQ(std::stoi(cf_values[WriteStallStatsMapKeys::TotalStops()]), 0);
       ASSERT_EQ(std::stoi(cf_values[WriteStallStatsMapKeys::TotalDelays()]), 0);
     }
@@ -2234,8 +2297,8 @@ TEST_F(DBPropertiesTest, GetMapPropertyWriteStallStats) {
 
     if (test_cause == WriteStallCause::kWriteBufferManagerLimit) {
       db_values.clear();
-      EXPECT_TRUE(dbfull()->GetMapProperty(DB::Properties::kDBWriteStallStats,
-                                           &db_values));
+      EXPECT_TRUE(dbfull()->GetMapProperty(
+          DB::Properties::GetDBWriteStallStats(), &db_values));
       EXPECT_EQ(std::stoi(db_values[WriteStallStatsMapKeys::CauseConditionCount(
                     WriteStallCause::kWriteBufferManagerLimit,
                     WriteStallCondition::kStopped)]),
@@ -2245,7 +2308,7 @@ TEST_F(DBPropertiesTest, GetMapPropertyWriteStallStats) {
       for (int cf = 0; cf <= 1; ++cf) {
         std::map<std::string, std::string> cf_values;
         EXPECT_TRUE(dbfull()->GetMapProperty(
-            handles_[cf], DB::Properties::kCFWriteStallStats, &cf_values));
+            handles_[cf], DB::Properties::GetCFWriteStallStats(), &cf_values));
         EXPECT_EQ(std::stoi(cf_values[WriteStallStatsMapKeys::TotalStops()]),
                   0);
         EXPECT_EQ(std::stoi(cf_values[WriteStallStatsMapKeys::TotalDelays()]),
@@ -2255,7 +2318,7 @@ TEST_F(DBPropertiesTest, GetMapPropertyWriteStallStats) {
       for (int cf = 0; cf <= 1; ++cf) {
         std::map<std::string, std::string> cf_values;
         EXPECT_TRUE(dbfull()->GetMapProperty(
-            handles_[cf], DB::Properties::kCFWriteStallStats, &cf_values));
+            handles_[cf], DB::Properties::GetCFWriteStallStats(), &cf_values));
         EXPECT_EQ(std::stoi(cf_values[WriteStallStatsMapKeys::TotalStops()]),
                   cf == 1 ? 1 : 0);
         EXPECT_EQ(

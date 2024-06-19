@@ -960,8 +960,7 @@ Status CompactionJob::Install(const MutableCFOptions& mutable_cf_options,
   UpdateCompactionJobStats(stats);
 
   auto stream = event_logger_->LogToBuffer(log_buffer_, 8192);
-  stream << "job" << job_id_ << "event"
-         << "compaction_finished"
+  stream << "job" << job_id_ << "event" << "compaction_finished"
          << "compaction_time_micros" << stats.micros
          << "compaction_time_cpu_micros" << stats.cpu_micros << "output_level"
          << compact_->compaction->output_level() << "num_output_files"
@@ -1051,12 +1050,10 @@ void CompactionJob::NotifyOnSubcompactionBegin(
     listener->OnSubcompactionBegin(info);
   }
   info.status.PermitUncheckedError();
-
 }
 
 void CompactionJob::NotifyOnSubcompactionCompleted(
     SubcompactionState* sub_compact) {
-
   if (db_options_.listeners.empty()) {
     return;
   }
@@ -1660,13 +1657,14 @@ Status CompactionJob::FinishCompactionOutputFile(
   if (s.ok() && (current_entries > 0 || tp.num_range_deletions > 0)) {
     // Output to event logger and fire events.
     outputs.UpdateTableProperties();
-    ROCKS_LOG_INFO(db_options_.info_log,
-                   "[%s] [JOB %d] Generated table #%" PRIu64 ": %" PRIu64
-                   " keys, %" PRIu64 " bytes%s, temperature: %s",
-                   cfd->GetName().c_str(), job_id_, output_number,
-                   current_entries, meta->fd.file_size,
-                   meta->marked_for_compaction ? " (need compaction)" : "",
-                   temperature_to_string[meta->temperature].c_str());
+    ROCKS_LOG_INFO(
+        db_options_.info_log,
+        "[%s] [JOB %d] Generated table #%" PRIu64 ": %" PRIu64 " keys, %" PRIu64
+        " bytes%s, temperature: %s",
+        cfd->GetName().c_str(), job_id_, output_number, current_entries,
+        meta->fd.file_size,
+        meta->marked_for_compaction ? " (need compaction)" : "",
+        OptionsHelper::GetTemperatureToString()[meta->temperature].c_str());
   }
   std::string fname;
   FileDescriptor output_fd;
@@ -2100,8 +2098,7 @@ void CompactionJob::LogCompaction() {
                    cfd->GetName().c_str(), scratch);
     // build event logger report
     auto stream = event_logger_->Log();
-    stream << "job" << job_id_ << "event"
-           << "compaction_started"
+    stream << "job" << job_id_ << "event" << "compaction_started"
            << "compaction_reason"
            << GetCompactionReasonString(compaction->compaction_reason());
     for (size_t i = 0; i < compaction->num_input_levels(); ++i) {
