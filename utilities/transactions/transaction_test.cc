@@ -2846,7 +2846,8 @@ TEST_P(TransactionTest, ColumnFamiliesTest) {
   // open DB with three column families
   std::vector<ColumnFamilyDescriptor> column_families;
   // have to open default column family
-  column_families.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions());
+  column_families.emplace_back(GetDefaultColumnFamilyName(),
+                               ColumnFamilyOptions());
   // open the new column families
   column_families.emplace_back("CFA", ColumnFamilyOptions());
   column_families.emplace_back("CFB", ColumnFamilyOptions());
@@ -3080,7 +3081,8 @@ TEST_P(TransactionTest, MultiGetBatchedTest) {
   // open DB with three column families
   std::vector<ColumnFamilyDescriptor> column_families;
   // have to open default column family
-  column_families.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions());
+  column_families.emplace_back(GetDefaultColumnFamilyName(),
+                               ColumnFamilyOptions());
   // open the new column families
   cf_options.merge_operator = MergeOperators::CreateStringAppendOperator();
   column_families.emplace_back("CF", cf_options);
@@ -3173,7 +3175,8 @@ TEST_P(TransactionTest, MultiGetLargeBatchedTest) {
   // open DB with three column families
   std::vector<ColumnFamilyDescriptor> column_families;
   // have to open default column family
-  column_families.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions());
+  column_families.emplace_back(GetDefaultColumnFamilyName(),
+                               ColumnFamilyOptions());
   // open the new column families
   cf_options.merge_operator = MergeOperators::CreateStringAppendOperator();
   column_families.emplace_back("CF", cf_options);
@@ -5589,7 +5592,8 @@ TEST_P(TransactionTest, ToggleAutoCompactionTest) {
   // open DB with three column families
   std::vector<ColumnFamilyDescriptor> column_families;
   // have to open default column family
-  column_families.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions());
+  column_families.emplace_back(GetDefaultColumnFamilyName(),
+                               ColumnFamilyOptions());
   // open the new column families
   column_families.emplace_back("CFA", ColumnFamilyOptions());
   column_families.emplace_back("CFB", ColumnFamilyOptions());
@@ -6248,8 +6252,8 @@ TEST_P(TransactionTest, DuplicateKeys) {
         }
         delete cf_handle;
       }  // with_commit_batch
-    }    // do_rollback
-  }      // do_prepare
+    }  // do_rollback
+  }  // do_prepare
 
   if (!options.unordered_write) {
     // Also test with max_successive_merges > 0. max_successive_merges will not
@@ -6306,7 +6310,7 @@ TEST_P(TransactionTest, DuplicateKeys) {
     ASSERT_OK(db->CreateColumnFamily(cf_options, cf_name, &cf_handle));
     delete cf_handle;
     std::vector<ColumnFamilyDescriptor> cfds{
-        ColumnFamilyDescriptor(kDefaultColumnFamilyName,
+        ColumnFamilyDescriptor(GetDefaultColumnFamilyName(),
                                ColumnFamilyOptions(options)),
         ColumnFamilyDescriptor(cf_name, cf_options),
     };
@@ -6610,7 +6614,7 @@ TEST_P(TransactionTest, DoubleCrashInRecovery) {
       // Recover from corruption
       std::vector<ColumnFamilyHandle*> handles;
       std::vector<ColumnFamilyDescriptor> column_families;
-      column_families.emplace_back(kDefaultColumnFamilyName,
+      column_families.emplace_back(GetDefaultColumnFamilyName(),
                                    ColumnFamilyOptions());
       column_families.emplace_back("two", ColumnFamilyOptions());
       ASSERT_OK(ReOpenNoDelete(column_families, &handles));
@@ -6690,7 +6694,7 @@ TEST_P(TransactionTest, OpenAndEnableU64Timestamp) {
 
   {
     std::vector<ColumnFamilyDescriptor> cf_descs;
-    cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+    cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
     cf_descs.emplace_back(test_cf_name, cf_opts);
     std::vector<ColumnFamilyHandle*> handles;
     const Status s = ReOpenNoDelete(cf_descs, &handles);
@@ -6742,7 +6746,7 @@ TEST_P(TransactionTest, OpenAndEnableU32Timestamp) {
 
   {
     std::vector<ColumnFamilyDescriptor> cf_descs;
-    cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+    cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
     cf_descs.emplace_back(test_cf_name, cf_opts);
     std::vector<ColumnFamilyHandle*> handles;
     ASSERT_TRUE(ReOpenNoDelete(cf_descs, &handles).IsInvalidArgument());

@@ -1228,7 +1228,8 @@ TEST_F(DBFlushTest, MemPurgeWithAtomicFlush) {
   //        new_cf_names[1] will be filled with random values (would trigger
   //        flush) new_cf_names[2] not filled with anything.
   ReopenWithColumnFamilies(
-      {kDefaultColumnFamilyName, new_cf_names[0], new_cf_names[1]}, options);
+      {GetDefaultColumnFamilyName(), new_cf_names[0], new_cf_names[1]},
+      options);
   size_t num_cfs = handles_.size();
   ASSERT_EQ(3, num_cfs);
   ASSERT_OK(Put(1, "foo", "bar"));
@@ -2372,7 +2373,8 @@ TEST_F(DBFlushTest, PickRightMemtables) {
 
   Close();
 
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, test_cf_name}, options);
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), test_cf_name},
+                           options);
 
   ASSERT_OK(db_->Put(WriteOptions(), "key", "value"));
 
@@ -2636,7 +2638,7 @@ TEST_P(DBAtomicFlushTest, ManualFlushUnder2PC) {
   // In 2pc mode, MinLogNumberToKeep returns the
   // VersionSet::min_log_number_to_keep recovered from MANIFEST, if it's 0,
   // it means atomic flush didn't write the min_log_number_to_keep to MANIFEST.
-  cfs.push_back(kDefaultColumnFamilyName);
+  cfs.push_back(GetDefaultColumnFamilyName());
   ASSERT_OK(TryReopenWithColumnFamilies(cfs, options));
   DBImpl* db_impl = static_cast<DBImpl*>(db_);
   ASSERT_TRUE(db_impl->allow_2pc());
@@ -2900,7 +2902,7 @@ TEST_P(DBAtomicFlushTest,
     ASSERT_EQ("value", Get(cf_id, "key"));
   }
 
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "eevee"}, options);
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "eevee"}, options);
   num_cfs = handles_.size();
   ASSERT_EQ(2, num_cfs);
   for (size_t i = 0; i != num_cfs; ++i) {
@@ -2932,7 +2934,7 @@ TEST_P(DBAtomicFlushTest, TriggerFlushAndClose) {
   ASSERT_OK(Put(0, "key", "value"));
   Close();
 
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu"}, options);
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "pikachu"}, options);
   ASSERT_EQ("value", Get(0, "key"));
 }
 

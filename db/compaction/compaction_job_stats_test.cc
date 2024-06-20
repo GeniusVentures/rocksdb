@@ -139,7 +139,8 @@ class CompactionJobStatsTest : public testing::Test,
                              const Options& options) {
     CreateColumnFamilies(cfs, options);
     std::vector<std::string> cfs_plus_default = cfs;
-    cfs_plus_default.insert(cfs_plus_default.begin(), kDefaultColumnFamilyName);
+    cfs_plus_default.insert(cfs_plus_default.begin(),
+                            GetDefaultColumnFamilyName());
     ReopenWithColumnFamilies(cfs_plus_default, options);
   }
 
@@ -958,7 +959,6 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-
 
 #else
 

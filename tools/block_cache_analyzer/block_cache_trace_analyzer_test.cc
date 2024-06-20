@@ -106,7 +106,7 @@ class BlockCacheTracerTest : public testing::Test {
       record.block_key = kBlockKeyPrefix + std::to_string(key_id);
       record.access_timestamp = timestamp;
       record.cf_id = kCFId;
-      record.cf_name = kDefaultColumnFamilyName;
+      record.cf_name = GetDefaultColumnFamilyName();
       record.caller = GetCaller(key_id);
       record.level = kLevel;
       if (key_id % 2 == 0) {
@@ -678,8 +678,8 @@ TEST_F(BlockCacheTracerTest, MixedBlocks) {
 
     auto& stats = analyzer.TEST_cf_aggregates_map();
     ASSERT_EQ(expected_num_cfs, stats.size());
-    ASSERT_TRUE(stats.find(kDefaultColumnFamilyName) != stats.end());
-    auto& cf_stats = stats.find(kDefaultColumnFamilyName)->second;
+    ASSERT_TRUE(stats.find(GetDefaultColumnFamilyName()) != stats.end());
+    auto& cf_stats = stats.find(GetDefaultColumnFamilyName())->second;
     ASSERT_EQ(expected_fds.size(), cf_stats.fd_aggregates_map.size());
     for (auto fd_id : expected_fds) {
       ASSERT_TRUE(cf_stats.fd_aggregates_map.find(fd_id) !=

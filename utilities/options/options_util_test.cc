@@ -3,7 +3,6 @@
 //  COPYING file in the root directory) and Apache 2.0 License
 //  (found in the LICENSE.Apache file in the root directory).
 
-
 #include "rocksdb/utilities/options_util.h"
 
 #include <cctype>
@@ -50,7 +49,7 @@ TEST_F(OptionsUtilTest, SaveAndLoad) {
   std::vector<ColumnFamilyOptions> cf_opts;
   test::RandomInitDBOptions(&db_opt, &rnd_);
   for (size_t i = 0; i < kCFCount; ++i) {
-    cf_names.push_back(i == 0 ? kDefaultColumnFamilyName
+    cf_names.push_back(i == 0 ? GetDefaultColumnFamilyName()
                               : test::RandomName(&rnd_, 10));
     cf_opts.emplace_back();
     test::RandomInitCFOptions(&cf_opts.back(), db_opt, &rnd_);
@@ -120,7 +119,7 @@ TEST_F(OptionsUtilTest, SaveAndLoadWithCacheCheck) {
   cf_opts.push_back(cf_opt_plain_table_opt);
 
   std::vector<std::string> cf_names;
-  cf_names.push_back(kDefaultColumnFamilyName);
+  cf_names.push_back(GetDefaultColumnFamilyName());
   cf_names.emplace_back("cf_sample");
   cf_names.emplace_back("cf_plain_table_sample");
   // Saving DB in file
@@ -228,7 +227,7 @@ TEST_F(OptionsUtilTest, SanityCheck) {
   for (size_t i = 0; i < kCFCount; ++i) {
     cf_descs.emplace_back();
     cf_descs.back().name =
-        (i == 0) ? kDefaultColumnFamilyName : test::RandomName(&rnd_, 10);
+        (i == 0) ? GetDefaultColumnFamilyName() : test::RandomName(&rnd_, 10);
 
     cf_descs.back().options.table_factory.reset(NewBlockBasedTableFactory());
     // Assign non-null values to prefix_extractors except the first cf.
@@ -440,7 +439,7 @@ TEST_F(OptionsUtilTest, LoadLatestOptions) {
   ASSERT_OK(DestroyDB(dbname_, options));
 
   cf_descs.emplace_back();
-  cf_descs.back().name = kDefaultColumnFamilyName;
+  cf_descs.back().name = GetDefaultColumnFamilyName();
   cf_descs.back().options.table_factory.reset(NewBlockBasedTableFactory());
   cf_descs.emplace_back();
   cf_descs.back().name = "Plain";

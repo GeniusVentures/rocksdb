@@ -1012,8 +1012,8 @@ TEST_F(LdbCmdTest, UnsafeRemoveSstFile) {
   ASSERT_EQ(0,
             LDBCommandRunner::RunCommand(4, argv, opts, LDBOptions(), nullptr));
 
-  std::vector<ColumnFamilyDescriptor> cfds = {{kDefaultColumnFamilyName, opts},
-                                              {"cf1", cf_opts}};
+  std::vector<ColumnFamilyDescriptor> cfds = {
+      {GetDefaultColumnFamilyName(), opts}, {"cf1", cf_opts}};
   std::vector<ColumnFamilyHandle*> handles;
   ASSERT_OK(DB::Open(opts, dbname, cfds, &handles, &db));
 
@@ -1232,7 +1232,7 @@ TEST_F(LdbCmdTest, CustomComparator) {
   DB* db = nullptr;
 
   std::vector<ColumnFamilyDescriptor> cfds = {
-      {kDefaultColumnFamilyName, opts}, {"cf1", opts}, {"cf2", opts}};
+      {GetDefaultColumnFamilyName(), opts}, {"cf1", opts}, {"cf2", opts}};
   std::vector<ColumnFamilyHandle*> handles;
   ASSERT_OK(DestroyDB(dbname, opts));
   ASSERT_OK(DB::Open(opts, dbname, cfds, &handles, &db));

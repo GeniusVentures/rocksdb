@@ -306,7 +306,7 @@ class DbStressListener : public EventListener {
 
  protected:
   bool IsValidColumnFamilyName(const std::string& cf_name) const {
-    if (cf_name == kDefaultColumnFamilyName) {
+    if (cf_name == GetDefaultColumnFamilyName()) {
       return true;
     }
     // The column family names in the stress tests are numbers.

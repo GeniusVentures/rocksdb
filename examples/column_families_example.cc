@@ -50,7 +50,7 @@ int main() {
   std::vector<ColumnFamilyDescriptor> column_families;
   // have to open default column family
   column_families.push_back(ColumnFamilyDescriptor(
-      ROCKSDB_NAMESPACE::kDefaultColumnFamilyName, ColumnFamilyOptions()));
+      ROCKSDB_NAMESPACE::GetDefaultColumnFamilyName(), ColumnFamilyOptions()));
   // open the new one, too
   column_families.push_back(
       ColumnFamilyDescriptor("new_cf", ColumnFamilyOptions()));

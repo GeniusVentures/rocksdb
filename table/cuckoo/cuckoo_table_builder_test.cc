@@ -3,7 +3,6 @@
 //  COPYING file in the root directory) and Apache 2.0 License
 //  (found in the LICENSE.Apache file in the root directory).
 
-
 #include "table/cuckoo/cuckoo_table_builder.h"
 
 #include <map>
@@ -114,7 +113,7 @@ class CuckooBuilderTest : public testing::Test {
                   (expected_table_size + expected_cuckoo_block_size - 1));
     ASSERT_EQ(props->raw_key_size, keys.size() * props->fixed_key_len);
     ASSERT_EQ(props->column_family_id, 0);
-    ASSERT_EQ(props->column_family_name, kDefaultColumnFamilyName);
+    ASSERT_EQ(props->column_family_name, GetDefaultColumnFamilyName());
 
     // Check contents of the bucket.
     std::vector<bool> keys_found(keys.size(), false);
@@ -178,7 +177,7 @@ TEST_F(CuckooBuilderTest, SuccessWithEmptyFile) {
   CuckooTableBuilder builder(file_writer.get(), kHashTableRatio, 4, 100,
                              BytewiseComparator(), 1, false, false,
                              GetSliceHash, 0 /* column_family_id */,
-                             kDefaultColumnFamilyName);
+                             GetDefaultColumnFamilyName());
   ASSERT_OK(builder.status());
   ASSERT_EQ(0UL, builder.FileSize());
   ASSERT_OK(builder.Finish());
@@ -219,7 +218,7 @@ TEST_F(CuckooBuilderTest, WriteSuccessNoCollisionFullKey) {
     CuckooTableBuilder builder(file_writer.get(), kHashTableRatio, num_hash_fun,
                                100, BytewiseComparator(), 1, false, false,
                                GetSliceHash, 0 /* column_family_id */,
-                               kDefaultColumnFamilyName);
+                               GetDefaultColumnFamilyName());
     ASSERT_OK(builder.status());
     for (uint32_t i = 0; i < user_keys.size(); i++) {
       builder.Add(Slice(keys[i]), Slice(values[i]));
@@ -267,7 +266,7 @@ TEST_F(CuckooBuilderTest, WriteSuccessWithCollisionFullKey) {
   CuckooTableBuilder builder(file_writer.get(), kHashTableRatio, num_hash_fun,
                              100, BytewiseComparator(), 1, false, false,
                              GetSliceHash, 0 /* column_family_id */,
-                             kDefaultColumnFamilyName);
+                             GetDefaultColumnFamilyName());
   ASSERT_OK(builder.status());
   for (uint32_t i = 0; i < user_keys.size(); i++) {
     builder.Add(Slice(keys[i]), Slice(values[i]));
@@ -315,7 +314,7 @@ TEST_F(CuckooBuilderTest, WriteSuccessWithCollisionAndCuckooBlock) {
   CuckooTableBuilder builder(
       file_writer.get(), kHashTableRatio, num_hash_fun, 100,
       BytewiseComparator(), cuckoo_block_size, false, false, GetSliceHash,
-      0 /* column_family_id */, kDefaultColumnFamilyName);
+      0 /* column_family_id */, GetDefaultColumnFamilyName());
   ASSERT_OK(builder.status());
   for (uint32_t i = 0; i < user_keys.size(); i++) {
     builder.Add(Slice(keys[i]), Slice(values[i]));
@@ -364,7 +363,7 @@ TEST_F(CuckooBuilderTest, WithCollisionPathFullKey) {
   CuckooTableBuilder builder(file_writer.get(), kHashTableRatio, num_hash_fun,
                              100, BytewiseComparator(), 1, false, false,
                              GetSliceHash, 0 /* column_family_id */,
-                             kDefaultColumnFamilyName);
+                             GetDefaultColumnFamilyName());
   ASSERT_OK(builder.status());
   for (uint32_t i = 0; i < user_keys.size(); i++) {
     builder.Add(Slice(keys[i]), Slice(values[i]));
@@ -410,7 +409,7 @@ TEST_F(CuckooBuilderTest, WithCollisionPathFullKeyAndCuckooBlock) {
   CuckooTableBuilder builder(file_writer.get(), kHashTableRatio, num_hash_fun,
                              100, BytewiseComparator(), 2, false, false,
                              GetSliceHash, 0 /* column_family_id */,
-                             kDefaultColumnFamilyName);
+                             GetDefaultColumnFamilyName());
   ASSERT_OK(builder.status());
   for (uint32_t i = 0; i < user_keys.size(); i++) {
     builder.Add(Slice(keys[i]), Slice(values[i]));
@@ -453,7 +452,7 @@ TEST_F(CuckooBuilderTest, WriteSuccessNoCollisionUserKey) {
   CuckooTableBuilder builder(file_writer.get(), kHashTableRatio, num_hash_fun,
                              100, BytewiseComparator(), 1, false, false,
                              GetSliceHash, 0 /* column_family_id */,
-                             kDefaultColumnFamilyName);
+                             GetDefaultColumnFamilyName());
   ASSERT_OK(builder.status());
   for (uint32_t i = 0; i < user_keys.size(); i++) {
     builder.Add(Slice(GetInternalKey(user_keys[i], true)), Slice(values[i]));
@@ -497,7 +496,7 @@ TEST_F(CuckooBuilderTest, WriteSuccessWithCollisionUserKey) {
   CuckooTableBuilder builder(file_writer.get(), kHashTableRatio, num_hash_fun,
                              100, BytewiseComparator(), 1, false, false,
                              GetSliceHash, 0 /* column_family_id */,
-                             kDefaultColumnFamilyName);
+                             GetDefaultColumnFamilyName());
   ASSERT_OK(builder.status());
   for (uint32_t i = 0; i < user_keys.size(); i++) {
     builder.Add(Slice(GetInternalKey(user_keys[i], true)), Slice(values[i]));
@@ -540,7 +539,7 @@ TEST_F(CuckooBuilderTest, WithCollisionPathUserKey) {
   CuckooTableBuilder builder(file_writer.get(), kHashTableRatio, num_hash_fun,
                              2, BytewiseComparator(), 1, false, false,
                              GetSliceHash, 0 /* column_family_id */,
-                             kDefaultColumnFamilyName);
+                             GetDefaultColumnFamilyName());
   ASSERT_OK(builder.status());
   for (uint32_t i = 0; i < user_keys.size(); i++) {
     builder.Add(Slice(GetInternalKey(user_keys[i], true)), Slice(values[i]));
@@ -581,7 +580,7 @@ TEST_F(CuckooBuilderTest, FailWhenCollisionPathTooLong) {
   CuckooTableBuilder builder(file_writer.get(), kHashTableRatio, num_hash_fun,
                              2, BytewiseComparator(), 1, false, false,
                              GetSliceHash, 0 /* column_family_id */,
-                             kDefaultColumnFamilyName);
+                             GetDefaultColumnFamilyName());
   ASSERT_OK(builder.status());
   for (uint32_t i = 0; i < user_keys.size(); i++) {
     builder.Add(Slice(GetInternalKey(user_keys[i], false)), Slice("value"));
@@ -608,7 +607,7 @@ TEST_F(CuckooBuilderTest, FailWhenSameKeyInserted) {
   CuckooTableBuilder builder(file_writer.get(), kHashTableRatio, num_hash_fun,
                              100, BytewiseComparator(), 1, false, false,
                              GetSliceHash, 0 /* column_family_id */,
-                             kDefaultColumnFamilyName);
+                             GetDefaultColumnFamilyName());
   ASSERT_OK(builder.status());
 
   builder.Add(Slice(GetInternalKey(user_key, false)), Slice("value1"));

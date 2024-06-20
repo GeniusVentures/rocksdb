@@ -65,13 +65,13 @@ class TraceReader;
 class TraceWriter;
 class WriteBatch;
 
-extern const std::string kDefaultColumnFamilyName;
-extern const std::string kPersistentStatsColumnFamilyName;
+const std::string& GetDefaultColumnFamilyName();
+const std::string& GetPersistentStatsColumnFamilyName();
 struct ColumnFamilyDescriptor {
   std::string name;
   ColumnFamilyOptions options;
   ColumnFamilyDescriptor()
-      : name(kDefaultColumnFamilyName), options(ColumnFamilyOptions()) {}
+      : name(GetDefaultColumnFamilyName()), options(ColumnFamilyOptions()) {}
   ColumnFamilyDescriptor(const std::string& _name,
                          const ColumnFamilyOptions& _options)
       : name(_name), options(_options) {}
@@ -193,7 +193,7 @@ class DB {
   // ListColumnFamilies().
   //
   // The default column family name is 'default' and it's stored
-  // in ROCKSDB_NAMESPACE::kDefaultColumnFamilyName.
+  // in ROCKSDB_NAMESPACE::GetDefaultColumnFamilyName().
   // If everything is OK, handles will on return be the same size
   // as column_families --- handles[i] will be a handle that you
   // will use to operate on column family column_family[i].
@@ -226,7 +226,8 @@ class DB {
   // When opening DB with read only, you can specify only a subset of column
   // families in the database that should be opened. However, you always need
   // to specify default column family. The default column family name is
-  // 'default' and it's stored in ROCKSDB_NAMESPACE::kDefaultColumnFamilyName
+  // 'default' and it's stored in
+  // ROCKSDB_NAMESPACE::GetDefaultColumnFamilyName()
   //
   static Status OpenForReadOnly(
       const DBOptions& db_options, const std::string& name,
@@ -266,7 +267,8 @@ class DB {
   // When opening DB in secondary mode, you can specify only a subset of column
   // families in the database that should be opened. However, you always need
   // to specify default column family. The default column family name is
-  // 'default' and it's stored in ROCKSDB_NAMESPACE::kDefaultColumnFamilyName
+  // 'default' and it's stored in
+  // ROCKSDB_NAMESPACE::GetDefaultColumnFamilyName()
   //
   // Column families created by the primary after the secondary instance starts
   // are currently ignored by the secondary instance.  Column families opened

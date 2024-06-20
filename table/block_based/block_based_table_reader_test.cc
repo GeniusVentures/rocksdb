@@ -141,7 +141,7 @@ class BlockBasedTableReaderBaseTest : public testing::Test {
             TableBuilderOptions(ioptions, moptions, read_options, write_options,
                                 comparator, &factories, compression_type,
                                 compression_opts, 0 /* column_family_id */,
-                                kDefaultColumnFamilyName, -1 /* level */),
+                                GetDefaultColumnFamilyName(), -1 /* level */),
             writer.get()));
 
     // Build table.

@@ -854,7 +854,6 @@ TEST_F(DBBasicTest, Snapshot) {
   } while (ChangeOptions());
 }
 
-
 class DBBasicMultiConfigs : public DBBasicTest,
                             public ::testing::WithParamInterface<int> {
  public:
@@ -2580,8 +2579,7 @@ class DBMultiGetAsyncIOTest : public DBBasicTest,
     // Warm up the block cache so we don't need to use the IO uring
     Iterator* iter = dbfull()->NewIterator(ReadOptions());
     for (iter->SeekToFirst(); iter->Valid() && iter->status().ok();
-         iter->Next())
-      ;
+         iter->Next());
     EXPECT_OK(iter->status());
     delete iter;
 #endif  // ROCKSDB_IOURING_PRESENT
@@ -3356,7 +3354,7 @@ TEST_F(DBBasicTest, IncrementalRecoveryNoCorrupt) {
   }
   Close();
   options.best_efforts_recovery = true;
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu", "eevee"},
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "pikachu", "eevee"},
                            options);
   num_cfs = handles_.size();
   ASSERT_EQ(3, num_cfs);
@@ -3437,7 +3435,7 @@ TEST_F(DBBasicTest, LastSstFileNotInManifest) {
   ASSERT_OK(Flush());
   // New sst file should have file number > kSstFileNumber.
   std::vector<std::string>& files =
-      listener->GetFiles(kDefaultColumnFamilyName);
+      listener->GetFiles(GetDefaultColumnFamilyName());
   ASSERT_EQ(files.size(), 1);
   const std::string fname = files[0].erase(0, (dbname_ + "/").size());
   uint64_t number = 0;
@@ -3455,8 +3453,8 @@ TEST_F(DBBasicTest, RecoverWithMissingFiles) {
   options.disable_auto_compactions = true;
   options.listeners.emplace_back(listener);
   CreateAndReopenWithCF({"pikachu", "eevee"}, options);
-  std::vector<std::string> all_cf_names = {kDefaultColumnFamilyName, "pikachu",
-                                           "eevee"};
+  std::vector<std::string> all_cf_names = {GetDefaultColumnFamilyName(),
+                                           "pikachu", "eevee"};
   size_t num_cfs = handles_.size();
   ASSERT_EQ(3, num_cfs);
   for (size_t cf = 0; cf != num_cfs; ++cf) {
@@ -3544,7 +3542,7 @@ TEST_F(DBBasicTest, RecoverWithNoCurrentFile) {
   DestroyAndReopen(options);
   CreateAndReopenWithCF({"pikachu"}, options);
   options.best_efforts_recovery = true;
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu"}, options);
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "pikachu"}, options);
   ASSERT_EQ(2, handles_.size());
   ASSERT_OK(Put("foo", "value"));
   ASSERT_OK(Put(1, "bar", "value"));
@@ -3552,12 +3550,12 @@ TEST_F(DBBasicTest, RecoverWithNoCurrentFile) {
   ASSERT_OK(Flush(1));
   Close();
   ASSERT_OK(env_->DeleteFile(CurrentFileName(dbname_)));
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu"}, options);
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "pikachu"}, options);
   std::vector<std::string> cf_names;
   ASSERT_OK(DB::ListColumnFamilies(DBOptions(options), dbname_, &cf_names));
   ASSERT_EQ(2, cf_names.size());
   for (const auto& name : cf_names) {
-    ASSERT_TRUE(name == kDefaultColumnFamilyName || name == "pikachu");
+    ASSERT_TRUE(name == GetDefaultColumnFamilyName() || name == "pikachu");
   }
 }
 
@@ -3596,7 +3594,8 @@ TEST_F(DBBasicTest, SkipWALIfMissingTableFiles) {
   TableFileListener* listener = new TableFileListener();
   options.listeners.emplace_back(listener);
   CreateAndReopenWithCF({"pikachu"}, options);
-  std::vector<std::string> kAllCfNames = {kDefaultColumnFamilyName, "pikachu"};
+  std::vector<std::string> kAllCfNames = {GetDefaultColumnFamilyName(),
+                                          "pikachu"};
   size_t num_cfs = handles_.size();
   ASSERT_EQ(2, num_cfs);
   for (int cf = 0; cf < static_cast<int>(kAllCfNames.size()); ++cf) {

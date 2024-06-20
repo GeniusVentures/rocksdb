@@ -104,7 +104,7 @@ void TableReaderBenchmark(Options& opts, EnvOptions& env_options,
                             ikc, &internal_tbl_prop_coll_factories,
                             CompressionType::kNoCompression,
                             CompressionOptions(), 0 /* column_family_id */,
-                            kDefaultColumnFamilyName, unknown_level),
+                            GetDefaultColumnFamilyName(), unknown_level),
         file_writer.get());
   } else {
     s = DB::Open(opts, dbname, &db);

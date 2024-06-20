@@ -58,7 +58,7 @@ const size_t kNumKeysPerFlush = 1000;
 
 const std::vector<std::string>& GetColumnFamilyNames() {
   static std::vector<std::string> column_family_names = {
-      ROCKSDB_NAMESPACE::kDefaultColumnFamilyName, "pikachu"};
+      ROCKSDB_NAMESPACE::GetDefaultColumnFamilyName(), "pikachu"};
   return column_family_names;
 }
 
@@ -157,7 +157,7 @@ void CreateDB() {
   std::vector<ColumnFamilyHandle*> handles;
   ColumnFamilyOptions cf_opts(options);
   for (const auto& cf_name : GetColumnFamilyNames()) {
-    if (ROCKSDB_NAMESPACE::kDefaultColumnFamilyName != cf_name) {
+    if (ROCKSDB_NAMESPACE::GetDefaultColumnFamilyName() != cf_name) {
       ColumnFamilyHandle* handle = nullptr;
       s = db->CreateColumnFamily(cf_opts, cf_name, &handle);
       if (!s.ok()) {

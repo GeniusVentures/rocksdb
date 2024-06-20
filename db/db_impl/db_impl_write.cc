@@ -2065,7 +2065,7 @@ void DBImpl::MaybeFlushStatsCF(autovector<ColumnFamilyData*>* cfds) {
   if (!cfds->empty() && immutable_db_options_.persist_stats_to_disk) {
     ColumnFamilyData* cfd_stats =
         versions_->GetColumnFamilySet()->GetColumnFamily(
-            kPersistentStatsColumnFamilyName);
+            GetPersistentStatsColumnFamilyName());
     if (cfd_stats != nullptr && !cfd_stats->mem()->IsEmpty()) {
       for (ColumnFamilyData* cfd : *cfds) {
         if (cfd == cfd_stats) {

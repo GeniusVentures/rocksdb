@@ -998,13 +998,13 @@ TEST_F(BlobDBTest, GetLiveFilesMetaData) {
   ASSERT_EQ(filename1, metadata[0].name);
   ASSERT_EQ(1, metadata[0].file_number);
   ASSERT_EQ(0, metadata[0].oldest_ancester_time);
-  ASSERT_EQ(kDefaultColumnFamilyName, metadata[0].column_family_name);
+  ASSERT_EQ(GetDefaultColumnFamilyName(), metadata[0].column_family_name);
 
   const std::string filename2("/blob_dir/000002.blob");
   ASSERT_EQ(filename2, metadata[1].name);
   ASSERT_EQ(2, metadata[1].file_number);
   ASSERT_EQ(expiration, metadata[1].oldest_ancester_time);
-  ASSERT_EQ(kDefaultColumnFamilyName, metadata[1].column_family_name);
+  ASSERT_EQ(GetDefaultColumnFamilyName(), metadata[1].column_family_name);
 
   std::vector<std::string> livefile;
   uint64_t mfs;

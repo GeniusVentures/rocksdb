@@ -86,7 +86,7 @@ Status DBSecondaryTestBase::TryOpenSecondary(const Options& options) {
 void DBSecondaryTestBase::OpenSecondaryWithColumnFamilies(
     const std::vector<std::string>& column_families, const Options& options) {
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
   for (const auto& cf_name : column_families) {
     cf_descs.emplace_back(cf_name, options);
   }
@@ -702,7 +702,7 @@ TEST_F(DBSecondaryTest, OpenWithNonExistColumnFamily) {
   options1.env = env_;
   options1.max_open_files = -1;
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options1);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options1);
   cf_descs.emplace_back("pikachu", options1);
   cf_descs.emplace_back("eevee", options1);
   Status s = DB::OpenAsSecondary(options1, dbname_, secondary_path_, cf_descs,
@@ -913,7 +913,7 @@ TEST_F(DBSecondaryTest, SwitchManifest) {
   Options options1;
   options1.env = env_;
   options1.max_open_files = -1;
-  OpenSecondaryWithColumnFamilies({kDefaultColumnFamilyName, cf1_name},
+  OpenSecondaryWithColumnFamilies({GetDefaultColumnFamilyName(), cf1_name},
                                   options1);
 
   const int kNumFiles = options.level0_file_num_compaction_trigger - 1;
@@ -949,11 +949,11 @@ TEST_F(DBSecondaryTest, SwitchManifest) {
   // restart primary, performs full compaction, close again, restart again so
   // that next time secondary tries to catch up with primary, the secondary
   // will skip the MANIFEST in middle.
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, cf1_name}, options);
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), cf1_name}, options);
   ASSERT_OK(dbfull()->CompactRange(CompactRangeOptions(), nullptr, nullptr));
   ASSERT_OK(dbfull()->TEST_WaitForCompact());
 
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, cf1_name}, options);
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), cf1_name}, options);
   ASSERT_OK(dbfull()->SetOptions({{"disable_auto_compactions", "false"}}));
 
   ASSERT_OK(db_secondary_->TryCatchUpWithPrimary());
@@ -970,7 +970,7 @@ TEST_F(DBSecondaryTest, SwitchManifestTwice) {
   Options options1;
   options1.env = env_;
   options1.max_open_files = -1;
-  OpenSecondaryWithColumnFamilies({kDefaultColumnFamilyName, cf1_name},
+  OpenSecondaryWithColumnFamilies({GetDefaultColumnFamilyName(), cf1_name},
                                   options1);
 
   ASSERT_OK(Put("0", "value0"));
@@ -982,9 +982,9 @@ TEST_F(DBSecondaryTest, SwitchManifestTwice) {
   ASSERT_OK(db_secondary_->Get(ropts, "0", &value));
   ASSERT_EQ("value0", value);
 
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, cf1_name}, options);
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), cf1_name}, options);
   ASSERT_OK(dbfull()->SetOptions({{"disable_auto_compactions", "false"}}));
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, cf1_name}, options);
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), cf1_name}, options);
   ASSERT_OK(Put("0", "value1"));
   ASSERT_OK(db_secondary_->TryCatchUpWithPrimary());
 

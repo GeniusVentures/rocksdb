@@ -199,7 +199,7 @@ TEST_P(WriteCallbackPTest, WriteWithCallbackTest) {
     DBOptions db_options(options);
     ColumnFamilyOptions cf_options(options);
     std::vector<ColumnFamilyDescriptor> column_families;
-    column_families.emplace_back(kDefaultColumnFamilyName, cf_options);
+    column_families.emplace_back(GetDefaultColumnFamilyName(), cf_options);
     std::vector<ColumnFamilyHandle*> handles;
     auto open_s = DBImpl::Open(db_options, dbname, column_families, &handles,
                                &db, seq_per_batch_, true /* batch_per_txn */,
@@ -492,4 +492,3 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-

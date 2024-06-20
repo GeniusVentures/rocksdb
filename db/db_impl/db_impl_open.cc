@@ -892,7 +892,8 @@ Status DBImpl::PersistentStatsProcessFormatVersion() {
         OptimizeForPersistentStats(&cfo);
         s = CreateColumnFamilyImpl(ReadOptions(Env::IOActivity::kDBOpen),
                                    WriteOptions(Env::IOActivity::kDBOpen), cfo,
-                                   kPersistentStatsColumnFamilyName, &handle);
+                                   GetPersistentStatsColumnFamilyName(),
+                                   &handle);
       }
       if (s.ok()) {
         persist_stats_cf_handle_ = static_cast<ColumnFamilyHandleImpl*>(handle);
@@ -931,7 +932,7 @@ Status DBImpl::InitPersistStatsColumnFamily() {
   assert(!persist_stats_cf_handle_);
   ColumnFamilyData* persistent_stats_cfd =
       versions_->GetColumnFamilySet()->GetColumnFamily(
-          kPersistentStatsColumnFamilyName);
+          GetPersistentStatsColumnFamilyName());
   persistent_stats_cfd_exists_ = persistent_stats_cfd != nullptr;
 
   Status s;
@@ -948,7 +949,7 @@ Status DBImpl::InitPersistStatsColumnFamily() {
     OptimizeForPersistentStats(&cfo);
     s = CreateColumnFamilyImpl(ReadOptions(Env::IOActivity::kDBOpen),
                                WriteOptions(Env::IOActivity::kDBOpen), cfo,
-                               kPersistentStatsColumnFamilyName, &handle);
+                               GetPersistentStatsColumnFamilyName(), &handle);
     persist_stats_cf_handle_ = static_cast<ColumnFamilyHandleImpl*>(handle);
     mutex_.Lock();
   }
@@ -1123,8 +1124,7 @@ Status DBImpl::RecoverLogFiles(const std::vector<uint64_t>& wal_numbers,
   int job_id = next_job_id_.fetch_add(1);
   {
     auto stream = event_logger_.Log();
-    stream << "job" << job_id << "event"
-           << "recovery_started";
+    stream << "job" << job_id << "event" << "recovery_started";
     stream << "wal_files";
     stream.StartArray();
     for (auto wal_number : wal_numbers) {
@@ -1546,8 +1546,7 @@ Status DBImpl::RecoverLogFiles(const std::vector<uint64_t>& wal_numbers,
     }
   }
 
-  event_logger_.Log() << "job" << job_id << "event"
-                      << "recovery_finished";
+  event_logger_.Log() << "job" << job_id << "event" << "recovery_finished";
 
   return status;
 }
@@ -1814,9 +1813,10 @@ Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
   DBOptions db_options(options);
   ColumnFamilyOptions cf_options(options);
   std::vector<ColumnFamilyDescriptor> column_families;
-  column_families.emplace_back(kDefaultColumnFamilyName, cf_options);
+  column_families.emplace_back(GetDefaultColumnFamilyName(), cf_options);
   if (db_options.persist_stats_to_disk) {
-    column_families.emplace_back(kPersistentStatsColumnFamilyName, cf_options);
+    column_families.emplace_back(GetPersistentStatsColumnFamilyName(),
+                                 cf_options);
   }
   std::vector<ColumnFamilyHandle*> handles;
   Status s = DB::Open(db_options, dbname, column_families, &handles, dbptr);

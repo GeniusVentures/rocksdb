@@ -3,7 +3,6 @@
 //  COPYING file in the root directory) and Apache 2.0 License
 //  (found in the LICENSE.Apache file in the root directory).
 
-
 #include "db/db_impl/db_impl.h"
 #include "rocksdb/cache.h"
 #include "rocksdb/table.h"
@@ -157,7 +156,7 @@ TEST_F(MemoryTest, MemTableAndTableReadersTotal) {
   opt.disable_auto_compactions = true;
 
   std::vector<ColumnFamilyDescriptor> cf_descs = {
-      {kDefaultColumnFamilyName, ColumnFamilyOptions(opt)},
+      {GetDefaultColumnFamilyName(), ColumnFamilyOptions(opt)},
       {"one", ColumnFamilyOptions(opt)},
       {"two", ColumnFamilyOptions(opt)},
   };
@@ -266,4 +265,3 @@ int main(int argc, char** argv) {
   return 0;
 #endif
 }
-

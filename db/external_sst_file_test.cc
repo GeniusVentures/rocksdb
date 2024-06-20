@@ -2613,7 +2613,7 @@ TEST_P(ExternalSSTFileTest, IngestFilesIntoMultipleColumnFamilies_Success) {
   ASSERT_OK(GenerateAndAddExternalFiles(options, column_families, ifos, data,
                                         -1, true, true_data));
   Close();
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu", "eevee"},
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "pikachu", "eevee"},
                            options);
   ASSERT_EQ(3, handles_.size());
   int cf = 0;
@@ -2734,7 +2734,7 @@ TEST_P(ExternalSSTFileTest,
   dbfull()->ReleaseSnapshot(read_opts.snapshot);
 
   Close();
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu", "eevee"},
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "pikachu", "eevee"},
                            options);
   // Should see consistent state after ingestion for all column families even
   // without snapshot.
@@ -2807,7 +2807,7 @@ TEST_P(ExternalSSTFileTest, IngestFilesIntoMultipleColumnFamilies_PrepareFail) {
 
   fault_injection_env->SetFilesystemActive(true);
   Close();
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu", "eevee"},
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "pikachu", "eevee"},
                            options);
   ASSERT_EQ(3, handles_.size());
   int cf = 0;
@@ -2876,7 +2876,7 @@ TEST_P(ExternalSSTFileTest, IngestFilesIntoMultipleColumnFamilies_CommitFail) {
 
   fault_injection_env->SetFilesystemActive(true);
   Close();
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu", "eevee"},
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "pikachu", "eevee"},
                            options);
   ASSERT_EQ(3, handles_.size());
   int cf = 0;
@@ -2951,7 +2951,7 @@ TEST_P(ExternalSSTFileTest,
   ASSERT_OK(fault_injection_env->DropUnsyncedFileData());
   fault_injection_env->SetFilesystemActive(true);
   Close();
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu", "eevee"},
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "pikachu", "eevee"},
                            options);
   ASSERT_EQ(3, handles_.size());
   int cf = 0;

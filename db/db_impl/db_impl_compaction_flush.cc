@@ -2319,7 +2319,7 @@ Status DBImpl::FlushMemTable(ColumnFamilyData* cfd,
       if (immutable_db_options_.persist_stats_to_disk) {
         ColumnFamilyData* cfd_stats =
             versions_->GetColumnFamilySet()->GetColumnFamily(
-                kPersistentStatsColumnFamilyName);
+                GetPersistentStatsColumnFamilyName());
         if (cfd_stats != nullptr && cfd_stats != cfd &&
             !cfd_stats->mem()->IsEmpty()) {
           // only force flush stats CF when it will be the only CF lagging
@@ -3825,8 +3825,7 @@ Status DBImpl::BackgroundCompaction(bool* made_progress,
                                                              moved_bytes);
     {
       event_logger_.LogToBuffer(log_buffer)
-          << "job" << job_context->job_id << "event"
-          << "trivial_move"
+          << "job" << job_context->job_id << "event" << "trivial_move"
           << "destination_level" << c->output_level() << "files" << moved_files
           << "total_files_size" << moved_bytes;
     }

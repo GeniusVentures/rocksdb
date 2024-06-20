@@ -70,7 +70,7 @@ class BlockCacheTracerTest : public testing::Test {
       record.block_key = (kBlockKeyPrefix + std::to_string(key_id));
       record.access_timestamp = clock_->NowMicros();
       record.cf_id = kCFId;
-      record.cf_name = kDefaultColumnFamilyName;
+      record.cf_name = GetDefaultColumnFamilyName();
       record.caller = GetCaller(key_id);
       record.level = kLevel;
       record.sst_fd_number = kSSTFDNumber + key_id;
@@ -100,7 +100,7 @@ class BlockCacheTracerTest : public testing::Test {
     record.block_key = kBlockKeyPrefix + std::to_string(key_id);
     record.access_timestamp = clock_->NowMicros();
     record.cf_id = kCFId;
-    record.cf_name = kDefaultColumnFamilyName;
+    record.cf_name = GetDefaultColumnFamilyName();
     record.caller = GetCaller(key_id);
     record.level = kLevel;
     record.sst_fd_number = kSSTFDNumber + key_id;
@@ -123,7 +123,7 @@ class BlockCacheTracerTest : public testing::Test {
       ASSERT_EQ(kBlockSize + key_id, record.block_size);
       ASSERT_EQ(kBlockKeyPrefix + std::to_string(key_id), record.block_key);
       ASSERT_EQ(kCFId, record.cf_id);
-      ASSERT_EQ(kDefaultColumnFamilyName, record.cf_name);
+      ASSERT_EQ(GetDefaultColumnFamilyName(), record.cf_name);
       ASSERT_EQ(GetCaller(key_id), record.caller);
       ASSERT_EQ(kLevel, record.level);
       ASSERT_EQ(kSSTFDNumber + key_id, record.sst_fd_number);
@@ -391,7 +391,7 @@ TEST_F(BlockCacheTracerTest, HumanReadableTrace) {
     ASSERT_EQ(TraceType::kBlockTraceDataBlock, read_record.block_type);
     ASSERT_EQ(kBlockSize, read_record.block_size);
     ASSERT_EQ(kCFId, read_record.cf_id);
-    ASSERT_EQ(kDefaultColumnFamilyName, read_record.cf_name);
+    ASSERT_EQ(GetDefaultColumnFamilyName(), read_record.cf_name);
     ASSERT_EQ(TableReaderCaller::kUserGet, read_record.caller);
     ASSERT_EQ(kLevel, read_record.level);
     ASSERT_EQ(kSSTFDNumber, read_record.sst_fd_number);

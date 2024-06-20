@@ -110,7 +110,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
         std::vector<ROCKSDB_NAMESPACE::ColumnFamilyDescriptor> column_families;
         // have to open default column family
         column_families.push_back(ROCKSDB_NAMESPACE::ColumnFamilyDescriptor(
-            ROCKSDB_NAMESPACE::kDefaultColumnFamilyName,
+            ROCKSDB_NAMESPACE::GetDefaultColumnFamilyName(),
             ROCKSDB_NAMESPACE::ColumnFamilyOptions()));
         // open the new one, too
         column_families.push_back(ROCKSDB_NAMESPACE::ColumnFamilyDescriptor(

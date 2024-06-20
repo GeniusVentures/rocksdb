@@ -7,7 +7,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-
 #include <algorithm>
 #include <set>
 
@@ -578,7 +577,7 @@ TEST_P(PlainTableDBTest, Flush2) {
             plain_table_options.store_index_in_file = store_index_in_file;
             options.table_factory.reset(new TestPlainTableFactory(
                 &expect_bloom_not_match, plain_table_options,
-                0 /* column_family_id */, kDefaultColumnFamilyName));
+                0 /* column_family_id */, GetDefaultColumnFamilyName()));
 
             DestroyAndReopen(&options);
             ASSERT_OK(Put("0000000000000bar", "b"));
@@ -692,7 +691,7 @@ TEST_P(PlainTableDBTest, Iterator) {
 
             options.table_factory.reset(new TestPlainTableFactory(
                 &expect_bloom_not_match, plain_table_options,
-                0 /* column_family_id */, kDefaultColumnFamilyName));
+                0 /* column_family_id */, GetDefaultColumnFamilyName()));
           } else {
             PlainTableOptions plain_table_options;
             plain_table_options.user_key_len = 16;
@@ -704,7 +703,7 @@ TEST_P(PlainTableDBTest, Iterator) {
 
             options.table_factory.reset(new TestPlainTableFactory(
                 &expect_bloom_not_match, plain_table_options,
-                0 /* column_family_id */, kDefaultColumnFamilyName));
+                0 /* column_family_id */, GetDefaultColumnFamilyName()));
           }
           DestroyAndReopen(&options);
 
@@ -822,7 +821,7 @@ TEST_P(PlainTableDBTest, BloomSchema) {
     bool expect_bloom_not_match = false;
     options.table_factory.reset(new TestPlainTableFactory(
         &expect_bloom_not_match, plain_table_options, 0 /* column_family_id */,
-        kDefaultColumnFamilyName));
+        GetDefaultColumnFamilyName()));
     DestroyAndReopen(&options);
 
     for (unsigned i = 0; i < 2345; ++i) {

@@ -80,7 +80,7 @@ TEST_F(DBTest2, OpenForReadOnlyWithColumnFamilies) {
 
   ColumnFamilyOptions cf_options(options);
   std::vector<ColumnFamilyDescriptor> column_families;
-  column_families.emplace_back(kDefaultColumnFamilyName, cf_options);
+  column_families.emplace_back(GetDefaultColumnFamilyName(), cf_options);
   column_families.emplace_back("goku", cf_options);
   std::vector<ColumnFamilyHandle*> handles;
   // OpenForReadOnly should fail but will create <dbname> in the file system
@@ -1163,7 +1163,7 @@ TEST_F(DBTest2, WalFilterTestWithColumnFamilies) {
   auto cf_wal_keys = test_wal_filter_column_families.GetColumnFamilyKeys();
   auto name_id_map = test_wal_filter_column_families.GetColumnFamilyNameIdMap();
   size_t index = 0;
-  auto keys_cf = cf_wal_keys[name_id_map[kDefaultColumnFamilyName]];
+  auto keys_cf = cf_wal_keys[name_id_map[GetDefaultColumnFamilyName()]];
   // default column-family, only post_flush keys are expected
   for (size_t i = 0; i < batch_keys_post_flush.size(); i++) {
     for (size_t j = 0; j < batch_keys_post_flush[i].size(); j++) {
@@ -5718,7 +5718,7 @@ TEST_F(DBTest2, CrashInRecoveryMultipleCF) {
         [&](void* /*arg*/) { fit_env.SetFilesystemActive(false); });
     ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->EnableProcessing();
     ASSERT_NOK(TryReopenWithColumnFamilies(
-        {kDefaultColumnFamilyName, "pikachu"}, options));
+        {GetDefaultColumnFamilyName(), "pikachu"}, options));
     ROCKSDB_NAMESPACE::SyncPoint::GetInstance()->DisableProcessing();
 
     fit_env.SetFilesystemActive(true);
@@ -5726,8 +5726,8 @@ TEST_F(DBTest2, CrashInRecoveryMultipleCF) {
     // when renaming current file, which is not expected. Need to investigate
     // why.
     options.env = env_;
-    ASSERT_OK(TryReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu"},
-                                          options));
+    ASSERT_OK(TryReopenWithColumnFamilies(
+        {GetDefaultColumnFamilyName(), "pikachu"}, options));
   }
 }
 
@@ -7104,7 +7104,7 @@ TEST_F(DBTest2, FileTemperatureManifestFixup) {
   std::vector<std::string> cfs = {/*"default",*/ "test1", "test2"};
   CreateAndReopenWithCF(cfs, options);
   // Needed for later re-opens (weird)
-  cfs.insert(cfs.begin(), kDefaultColumnFamilyName);
+  cfs.insert(cfs.begin(), GetDefaultColumnFamilyName());
 
   // Generate a bottommost file in all CFs
   for (int cf = 0; cf < 3; ++cf) {

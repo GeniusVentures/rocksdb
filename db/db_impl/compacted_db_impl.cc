@@ -200,7 +200,7 @@ void CompactedDBImpl::MultiGet(const ReadOptions& _read_options,
 Status CompactedDBImpl::Init(const Options& options) {
   SuperVersionContext sv_context(/* create_superversion */ true);
   mutex_.Lock();
-  ColumnFamilyDescriptor cf(kDefaultColumnFamilyName,
+  ColumnFamilyDescriptor cf(GetDefaultColumnFamilyName(),
                             ColumnFamilyOptions(options));
   Status s = Recover({cf}, true /* read only */, false, true);
   if (s.ok()) {

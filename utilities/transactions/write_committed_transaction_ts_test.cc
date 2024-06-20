@@ -48,7 +48,7 @@ TEST_P(WriteCommittedTxnWithTsTest, SanityChecks) {
   cfh = nullptr;
 
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
   cf_descs.emplace_back(test_cf_name, cf_opts);
   ASSERT_OK(ReOpenNoDelete(cf_descs, &handles_));
 
@@ -144,7 +144,7 @@ TEST_P(WriteCommittedTxnWithTsTest, ReOpenWithTimestamp) {
   cfh = nullptr;
 
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
   cf_descs.emplace_back(test_cf_name, cf_opts);
   ASSERT_OK(ReOpenNoDelete(cf_descs, &handles_));
 
@@ -254,7 +254,7 @@ TEST_P(WriteCommittedTxnWithTsTest, RecoverFromWal) {
   cfh = nullptr;
 
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
   cf_descs.emplace_back(test_cf_name, cf_opts);
   options.avoid_flush_during_shutdown = true;
   ASSERT_OK(ReOpenNoDelete(cf_descs, &handles_));
@@ -331,7 +331,7 @@ TEST_P(WriteCommittedTxnWithTsTest, TransactionDbLevelApi) {
   cfh = nullptr;
 
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
   cf_descs.emplace_back(test_cf_name, cf_options);
 
   ASSERT_OK(ReOpenNoDelete(cf_descs, &handles_));
@@ -408,7 +408,7 @@ TEST_P(WriteCommittedTxnWithTsTest, Merge) {
   cfh = nullptr;
 
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
   cf_descs.emplace_back(test_cf_name, Options(DBOptions(), cf_options));
   options.avoid_flush_during_shutdown = true;
 
@@ -444,7 +444,7 @@ TEST_P(WriteCommittedTxnWithTsTest, GetForUpdate) {
   cfh = nullptr;
 
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
   cf_descs.emplace_back(test_cf_name, Options(DBOptions(), cf_options));
   options.avoid_flush_during_shutdown = true;
 
@@ -551,7 +551,7 @@ TEST_P(WriteCommittedTxnWithTsTest, BlindWrite) {
   cfh = nullptr;
 
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
   cf_descs.emplace_back(test_cf_name, Options(DBOptions(), cf_options));
   options.avoid_flush_during_shutdown = true;
   ASSERT_OK(ReOpenNoDelete(cf_descs, &handles_));
@@ -598,7 +598,7 @@ TEST_P(WriteCommittedTxnWithTsTest, RefineReadTimestamp) {
   cfh = nullptr;
 
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
   cf_descs.emplace_back(test_cf_name, Options(DBOptions(), cf_options));
   options.avoid_flush_during_shutdown = true;
 

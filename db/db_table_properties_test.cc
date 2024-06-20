@@ -25,7 +25,6 @@
 #include "util/atomic.h"
 #include "util/random.h"
 
-
 namespace ROCKSDB_NAMESPACE {
 
 // A helper function that ensures the table properties returned in
@@ -451,7 +450,7 @@ TEST_F(DBTablePropertiesTest, GetColumnFamilyNameProperty) {
     if (cf > 0) {
       expected_cf_name = kExtraCfName;
     } else {
-      expected_cf_name = kDefaultColumnFamilyName;
+      expected_cf_name = GetDefaultColumnFamilyName();
     }
     ASSERT_EQ(expected_cf_name,
               fname_to_props.begin()->second->column_family_name);
@@ -743,7 +742,6 @@ INSTANTIATE_TEST_CASE_P(DBTablePropertiesTest, DBTablePropertiesTest,
                                           "kCompactionStyleUniversal"));
 
 }  // namespace ROCKSDB_NAMESPACE
-
 
 int main(int argc, char** argv) {
   ROCKSDB_NAMESPACE::port::InstallStackTraceHandler();

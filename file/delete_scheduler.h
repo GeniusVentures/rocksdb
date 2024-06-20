@@ -5,7 +5,6 @@
 
 #pragma once
 
-
 #include <map>
 #include <queue>
 #include <string>
@@ -73,7 +72,7 @@ class DeleteScheduler {
     max_trash_db_ratio_.store(r);
   }
 
-  static const std::string kTrashExtension;
+  static const std::string& GetTrashExtension();
   static bool IsTrashFile(const std::string& file_path);
 
   // Check if there are any .trash files in path, and schedule their deletion
@@ -139,9 +138,8 @@ class DeleteScheduler {
   // size we will start deleting new files passed to DeleteScheduler
   // immediately
   std::atomic<double> max_trash_db_ratio_;
-  static const uint64_t kMicrosInSecond = 1000 * 1000LL;
+  static constexpr uint64_t kMicrosInSecond = 1000 * 1000LL;
   std::shared_ptr<Statistics> stats_;
 };
 
 }  // namespace ROCKSDB_NAMESPACE
-

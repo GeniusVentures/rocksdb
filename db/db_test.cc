@@ -1266,7 +1266,7 @@ void CheckLiveFilesMeta(
 
     const auto& expected_meta = files_by_level[level][i];
 
-    ASSERT_EQ(meta.column_family_name, kDefaultColumnFamilyName);
+    ASSERT_EQ(meta.column_family_name, GetDefaultColumnFamilyName());
     ASSERT_EQ(meta.file_number, expected_meta.fd.GetNumber());
     ASSERT_EQ(meta.file_number, TableFileNameToNumber(meta.name));
     ASSERT_EQ(meta.size, expected_meta.fd.file_size);
@@ -1374,7 +1374,7 @@ TEST_F(DBTest, MetaDataTest) {
 
   ColumnFamilyMetaData cf_meta;
   db_->GetColumnFamilyMetaData(&cf_meta);
-  CheckColumnFamilyMeta(cf_meta, kDefaultColumnFamilyName, files_by_level,
+  CheckColumnFamilyMeta(cf_meta, GetDefaultColumnFamilyName(), files_by_level,
                         start_time, end_time);
   std::vector<LiveFileMetaData> live_file_meta;
   db_->GetLiveFilesMetaData(&live_file_meta);

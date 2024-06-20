@@ -532,13 +532,13 @@ TEST_F(StatsHistoryTest, PersistentStatsCreateColumnFamilies) {
   // attempt to create column family using same name, should fail
   ColumnFamilyOptions cf_opts(options);
   ColumnFamilyHandle* handle;
-  ASSERT_NOK(db_->CreateColumnFamily(cf_opts, kPersistentStatsColumnFamilyName,
-                                     &handle));
+  ASSERT_NOK(db_->CreateColumnFamily(
+      cf_opts, GetPersistentStatsColumnFamilyName(), &handle));
 
   options.persist_stats_to_disk = true;
   ReopenWithColumnFamilies({"default", "one", "two", "three", "four"}, options);
-  ASSERT_NOK(db_->CreateColumnFamily(cf_opts, kPersistentStatsColumnFamilyName,
-                                     &handle));
+  ASSERT_NOK(db_->CreateColumnFamily(
+      cf_opts, GetPersistentStatsColumnFamilyName(), &handle));
   // verify stats is not affected by prior failed CF creation
   ASSERT_OK(db_->GetStatsHistory(0, mock_clock_->NowSeconds(), &stats_iter));
   ASSERT_TRUE(stats_iter != nullptr);

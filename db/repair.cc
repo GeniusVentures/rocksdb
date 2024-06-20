@@ -59,8 +59,6 @@
 //   Store per-table metadata (smallest, largest, largest-seq#, ...)
 //   in the table's meta section to speed up ScanTable.
 
-#include "db/version_builder.h"
-
 #include <cinttypes>
 
 #include "db/builder.h"
@@ -70,6 +68,7 @@
 #include "db/log_writer.h"
 #include "db/memtable.h"
 #include "db/table_cache.h"
+#include "db/version_builder.h"
 #include "db/version_edit.h"
 #include "db/write_batch_internal.h"
 #include "file/filename.h"
@@ -213,8 +212,8 @@ class Repairer {
 
     if (status.ok()) {
       // Recover using the fresh manifest created by NewDB()
-      status =
-          vset_.Recover({{kDefaultColumnFamilyName, default_cf_opts_}}, false);
+      status = vset_.Recover({{GetDefaultColumnFamilyName(), default_cf_opts_}},
+                             false);
     }
     if (status.ok()) {
       // Need to scan existing SST files first so the column families are
@@ -799,7 +798,7 @@ Status GetDefaultCFOptions(
   assert(res != nullptr);
   auto iter = std::find_if(column_families.begin(), column_families.end(),
                            [](const ColumnFamilyDescriptor& cfd) {
-                             return cfd.name == kDefaultColumnFamilyName;
+                             return cfd.name == GetDefaultColumnFamilyName();
                            });
   if (iter == column_families.end()) {
     return Status::InvalidArgument(

@@ -219,7 +219,8 @@ Status BlobDBImpl::Open(std::vector<ColumnFamilyHandle*>* handles) {
   cf_options_.compaction_filter = nullptr;
 
   // Open base db.
-  ColumnFamilyDescriptor cf_descriptor(kDefaultColumnFamilyName, cf_options_);
+  ColumnFamilyDescriptor cf_descriptor(GetDefaultColumnFamilyName(),
+                                       cf_options_);
   s = DB::Open(db_options_, dbname_, {cf_descriptor}, handles, &db_);
   if (!s.ok()) {
     return s;

@@ -3,7 +3,6 @@
 //  COPYING file in the root directory) and Apache 2.0 License
 //  (found in the LICENSE.Apache file in the root directory).
 
-
 #include "db/db_test_util.h"
 #include "port/stack_trace.h"
 #include "table/unique_id_impl.h"
@@ -315,8 +314,8 @@ TEST_F(CompactionServiceTest, BasicCompactions) {
         assert(*id != kNullUniqueId64x2);
         verify_passed++;
       });
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "cf_1", "cf_2", "cf_3"},
-                           options);
+  ReopenWithColumnFamilies(
+      {GetDefaultColumnFamilyName(), "cf_1", "cf_2", "cf_3"}, options);
   ASSERT_GT(verify_passed, 0);
   Close();
 }

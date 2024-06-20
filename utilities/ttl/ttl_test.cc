@@ -3,7 +3,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-
 #include <map>
 #include <memory>
 
@@ -674,7 +673,7 @@ TEST_F(TtlTest, ColumnFamiliesTest) {
   delete db;
 
   std::vector<ColumnFamilyDescriptor> column_families;
-  column_families.emplace_back(kDefaultColumnFamilyName,
+  column_families.emplace_back(GetDefaultColumnFamilyName(),
                                ColumnFamilyOptions(options));
   column_families.emplace_back("ttl_column_family",
                                ColumnFamilyOptions(options));
@@ -931,4 +930,3 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-

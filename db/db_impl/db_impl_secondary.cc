@@ -743,7 +743,7 @@ Status DB::OpenAsSecondary(const Options& options, const std::string& dbname,
   DBOptions db_options(options);
   ColumnFamilyOptions cf_options(options);
   std::vector<ColumnFamilyDescriptor> column_families;
-  column_families.emplace_back(kDefaultColumnFamilyName, cf_options);
+  column_families.emplace_back(GetDefaultColumnFamilyName(), cf_options);
   std::vector<ColumnFamilyHandle*> handles;
 
   Status s = DB::OpenAsSecondary(db_options, dbname, secondary_path,
@@ -979,8 +979,8 @@ Status DB::OpenAndCompact(
   // TODO: we have to open default CF, because of an implementation limitation,
   // currently we just use the same CF option from input, which is not collect
   // and open may fail.
-  if (compaction_input.column_family.name != kDefaultColumnFamilyName) {
-    column_families.emplace_back(kDefaultColumnFamilyName,
+  if (compaction_input.column_family.name != GetDefaultColumnFamilyName()) {
+    column_families.emplace_back(GetDefaultColumnFamilyName(),
                                  compaction_input.column_family.options);
   }
 
@@ -1020,6 +1020,5 @@ Status DB::OpenAndCompact(
   return OpenAndCompact(OpenAndCompactOptions(), name, output_directory, input,
                         output, override_options);
 }
-
 
 }  // namespace ROCKSDB_NAMESPACE

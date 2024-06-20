@@ -19,7 +19,7 @@ Status BlobDB::Open(const Options& options, const BlobDBOptions& bdb_options,
   DBOptions db_options(options);
   ColumnFamilyOptions cf_options(options);
   std::vector<ColumnFamilyDescriptor> column_families;
-  column_families.emplace_back(kDefaultColumnFamilyName, cf_options);
+  column_families.emplace_back(GetDefaultColumnFamilyName(), cf_options);
   std::vector<ColumnFamilyHandle*> handles;
   Status s = BlobDB::Open(db_options, bdb_options, dbname, column_families,
                           &handles, blob_db);
@@ -40,7 +40,7 @@ Status BlobDB::Open(const DBOptions& db_options,
   assert(handles);
 
   if (column_families.size() != 1 ||
-      column_families[0].name != kDefaultColumnFamilyName) {
+      column_families[0].name != GetDefaultColumnFamilyName()) {
     return Status::NotSupported(
         "Blob DB doesn't support non-default column family.");
   }

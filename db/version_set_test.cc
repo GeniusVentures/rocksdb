@@ -1295,7 +1295,7 @@ class VersionSetTestBase {
     new_db.SetLastSequence(0);
 
     const std::vector<std::string> cf_names = {
-        kDefaultColumnFamilyName, kColumnFamilyName1, kColumnFamilyName2,
+        GetDefaultColumnFamilyName(), kColumnFamilyName1, kColumnFamilyName2,
         kColumnFamilyName3};
     const int kInitialNumOfCfs = static_cast<int>(cf_names.size());
     autovector<VersionEdit> new_cfs;
@@ -3533,7 +3533,7 @@ TEST_F(EmptyDefaultCfNewManifest, Recover) {
   std::string manifest_path;
   VerifyManifest(&manifest_path);
   std::vector<ColumnFamilyDescriptor> column_families;
-  column_families.emplace_back(kDefaultColumnFamilyName, cf_options_);
+  column_families.emplace_back(GetDefaultColumnFamilyName(), cf_options_);
   column_families.emplace_back(VersionSetTestBase::kColumnFamilyName1,
                                cf_options_);
   std::string db_id;
@@ -3613,7 +3613,7 @@ TEST_P(VersionSetTestEmptyDb, OpenFromIncompleteManifest0) {
                                            read_only, &db_id,
                                            &has_missing_table_file);
   auto iter =
-      std::find(cf_names.begin(), cf_names.end(), kDefaultColumnFamilyName);
+      std::find(cf_names.begin(), cf_names.end(), GetDefaultColumnFamilyName());
   if (iter == cf_names.end()) {
     ASSERT_TRUE(s.IsInvalidArgument());
   } else {
@@ -3656,7 +3656,7 @@ TEST_P(VersionSetTestEmptyDb, OpenFromIncompleteManifest1) {
                                            read_only, &db_id,
                                            &has_missing_table_file);
   auto iter =
-      std::find(cf_names.begin(), cf_names.end(), kDefaultColumnFamilyName);
+      std::find(cf_names.begin(), cf_names.end(), GetDefaultColumnFamilyName());
   if (iter == cf_names.end()) {
     ASSERT_TRUE(s.IsInvalidArgument());
   } else {
@@ -3671,7 +3671,7 @@ TEST_P(VersionSetTestEmptyDb, OpenFromInCompleteManifest2) {
   // Write all column families but no log_number, next_file_number and
   // last_sequence.
   const std::vector<std::string> all_cf_names = {
-      kDefaultColumnFamilyName, kColumnFamilyName1, kColumnFamilyName2,
+      GetDefaultColumnFamilyName(), kColumnFamilyName1, kColumnFamilyName2,
       kColumnFamilyName3};
   uint32_t cf_id = 1;
   Status s;
@@ -3704,7 +3704,7 @@ TEST_P(VersionSetTestEmptyDb, OpenFromInCompleteManifest2) {
                                            read_only, &db_id,
                                            &has_missing_table_file);
   auto iter =
-      std::find(cf_names.begin(), cf_names.end(), kDefaultColumnFamilyName);
+      std::find(cf_names.begin(), cf_names.end(), GetDefaultColumnFamilyName());
   if (iter == cf_names.end()) {
     ASSERT_TRUE(s.IsInvalidArgument());
   } else {
@@ -3719,7 +3719,7 @@ TEST_P(VersionSetTestEmptyDb, OpenManifestWithUnknownCF) {
   // Write all column families but no log_number, next_file_number and
   // last_sequence.
   const std::vector<std::string> all_cf_names = {
-      kDefaultColumnFamilyName, kColumnFamilyName1, kColumnFamilyName2,
+      GetDefaultColumnFamilyName(), kColumnFamilyName1, kColumnFamilyName2,
       kColumnFamilyName3};
   uint32_t cf_id = 1;
   Status s;
@@ -3763,7 +3763,7 @@ TEST_P(VersionSetTestEmptyDb, OpenManifestWithUnknownCF) {
                                            read_only, &db_id,
                                            &has_missing_table_file);
   auto iter =
-      std::find(cf_names.begin(), cf_names.end(), kDefaultColumnFamilyName);
+      std::find(cf_names.begin(), cf_names.end(), GetDefaultColumnFamilyName());
   if (iter == cf_names.end()) {
     ASSERT_TRUE(s.IsInvalidArgument());
   } else {
@@ -3778,7 +3778,7 @@ TEST_P(VersionSetTestEmptyDb, OpenCompleteManifest) {
   // Write all column families but no log_number, next_file_number and
   // last_sequence.
   const std::vector<std::string> all_cf_names = {
-      kDefaultColumnFamilyName, kColumnFamilyName1, kColumnFamilyName2,
+      GetDefaultColumnFamilyName(), kColumnFamilyName1, kColumnFamilyName2,
       kColumnFamilyName3};
   uint32_t cf_id = 1;
   Status s;
@@ -3821,7 +3821,7 @@ TEST_P(VersionSetTestEmptyDb, OpenCompleteManifest) {
                                            read_only, &db_id,
                                            &has_missing_table_file);
   auto iter =
-      std::find(cf_names.begin(), cf_names.end(), kDefaultColumnFamilyName);
+      std::find(cf_names.begin(), cf_names.end(), GetDefaultColumnFamilyName());
   if (iter == cf_names.end()) {
     ASSERT_TRUE(s.IsInvalidArgument());
   } else if (read_only) {
@@ -3849,18 +3849,18 @@ INSTANTIATE_TEST_CASE_P(
         /*cf_names=*/
         testing::Values(
             std::vector<std::string>(),
-            std::vector<std::string>({kDefaultColumnFamilyName}),
+            std::vector<std::string>({GetDefaultColumnFamilyName()}),
             std::vector<std::string>({VersionSetTestBase::kColumnFamilyName1,
                                       VersionSetTestBase::kColumnFamilyName2,
                                       VersionSetTestBase::kColumnFamilyName3}),
-            std::vector<std::string>({kDefaultColumnFamilyName,
+            std::vector<std::string>({GetDefaultColumnFamilyName(),
                                       VersionSetTestBase::kColumnFamilyName1}),
-            std::vector<std::string>({kDefaultColumnFamilyName,
+            std::vector<std::string>({GetDefaultColumnFamilyName(),
                                       VersionSetTestBase::kColumnFamilyName1,
                                       VersionSetTestBase::kColumnFamilyName2,
                                       VersionSetTestBase::kColumnFamilyName3}),
             std::vector<std::string>(
-                {kDefaultColumnFamilyName,
+                {GetDefaultColumnFamilyName(),
                  VersionSetTestBase::kColumnFamilyName1,
                  VersionSetTestBase::kColumnFamilyName2,
                  VersionSetTestBase::kColumnFamilyName3,
@@ -3905,13 +3905,13 @@ class VersionSetTestMissingFiles : public VersionSetTestBase,
       ASSERT_OK(s);
     }
     const std::vector<std::string> cf_names = {
-        kDefaultColumnFamilyName, kColumnFamilyName1, kColumnFamilyName2,
+        GetDefaultColumnFamilyName(), kColumnFamilyName1, kColumnFamilyName2,
         kColumnFamilyName3};
     uint32_t cf_id = 1;  // default cf id is 0
     cf_options_.table_factory = table_factory_;
     for (const auto& cf_name : cf_names) {
       column_families->emplace_back(cf_name, cf_options_);
-      if (cf_name == kDefaultColumnFamilyName) {
+      if (cf_name == GetDefaultColumnFamilyName()) {
         continue;
       }
       VersionEdit new_cf;
@@ -3975,11 +3975,11 @@ class VersionSetTestMissingFiles : public VersionSetTestBase,
 
 TEST_F(VersionSetTestMissingFiles, ManifestFarBehindSst) {
   std::vector<SstInfo> existing_files = {
-      SstInfo(100, kDefaultColumnFamilyName, "a", 100 /* epoch_number */),
-      SstInfo(102, kDefaultColumnFamilyName, "b", 102 /* epoch_number */),
-      SstInfo(103, kDefaultColumnFamilyName, "c", 103 /* epoch_number */),
-      SstInfo(107, kDefaultColumnFamilyName, "d", 107 /* epoch_number */),
-      SstInfo(110, kDefaultColumnFamilyName, "e", 110 /* epoch_number */)};
+      SstInfo(100, GetDefaultColumnFamilyName(), "a", 100 /* epoch_number */),
+      SstInfo(102, GetDefaultColumnFamilyName(), "b", 102 /* epoch_number */),
+      SstInfo(103, GetDefaultColumnFamilyName(), "c", 103 /* epoch_number */),
+      SstInfo(107, GetDefaultColumnFamilyName(), "d", 107 /* epoch_number */),
+      SstInfo(110, GetDefaultColumnFamilyName(), "e", 110 /* epoch_number */)};
   std::vector<FileMetaData> file_metas;
   CreateDummyTableFiles(existing_files, &file_metas);
 
@@ -4026,15 +4026,15 @@ TEST_F(VersionSetTestMissingFiles, ManifestFarBehindSst) {
 
 TEST_F(VersionSetTestMissingFiles, ManifestAheadofSst) {
   std::vector<SstInfo> existing_files = {
-      SstInfo(100, kDefaultColumnFamilyName, "a", 0 /* level */,
+      SstInfo(100, GetDefaultColumnFamilyName(), "a", 0 /* level */,
               100 /* epoch_number */),
-      SstInfo(102, kDefaultColumnFamilyName, "b", 0 /* level */,
+      SstInfo(102, GetDefaultColumnFamilyName(), "b", 0 /* level */,
               102 /* epoch_number */),
-      SstInfo(103, kDefaultColumnFamilyName, "c", 0 /* level */,
+      SstInfo(103, GetDefaultColumnFamilyName(), "c", 0 /* level */,
               103 /* epoch_number */),
-      SstInfo(107, kDefaultColumnFamilyName, "d", 0 /* level */,
+      SstInfo(107, GetDefaultColumnFamilyName(), "d", 0 /* level */,
               107 /* epoch_number */),
-      SstInfo(110, kDefaultColumnFamilyName, "e", 0 /* level */,
+      SstInfo(110, GetDefaultColumnFamilyName(), "e", 0 /* level */,
               110 /* epoch_number */)};
   std::vector<FileMetaData> file_metas;
   CreateDummyTableFiles(existing_files, &file_metas);
@@ -4078,7 +4078,7 @@ TEST_F(VersionSetTestMissingFiles, ManifestAheadofSst) {
   for (ColumnFamilyData* cfd : *(versions_->GetColumnFamilySet())) {
     VersionStorageInfo* vstorage = cfd->current()->storage_info();
     const std::vector<FileMetaData*>& files = vstorage->LevelFiles(0);
-    if (cfd->GetName() == kDefaultColumnFamilyName) {
+    if (cfd->GetName() == GetDefaultColumnFamilyName()) {
       ASSERT_EQ(2, files.size());
       for (const auto* fmeta : files) {
         if (fmeta->fd.GetNumber() != 107 && fmeta->fd.GetNumber() != 110) {
@@ -4093,15 +4093,15 @@ TEST_F(VersionSetTestMissingFiles, ManifestAheadofSst) {
 
 TEST_F(VersionSetTestMissingFiles, NoFileMissing) {
   std::vector<SstInfo> existing_files = {
-      SstInfo(100, kDefaultColumnFamilyName, "a", 0 /* level */,
+      SstInfo(100, GetDefaultColumnFamilyName(), "a", 0 /* level */,
               100 /* epoch_number */),
-      SstInfo(102, kDefaultColumnFamilyName, "b", 0 /* level */,
+      SstInfo(102, GetDefaultColumnFamilyName(), "b", 0 /* level */,
               102 /* epoch_number */),
-      SstInfo(103, kDefaultColumnFamilyName, "c", 0 /* level */,
+      SstInfo(103, GetDefaultColumnFamilyName(), "c", 0 /* level */,
               103 /* epoch_number */),
-      SstInfo(107, kDefaultColumnFamilyName, "d", 0 /* level */,
+      SstInfo(107, GetDefaultColumnFamilyName(), "d", 0 /* level */,
               107 /* epoch_number */),
-      SstInfo(110, kDefaultColumnFamilyName, "e", 0 /* level */,
+      SstInfo(110, GetDefaultColumnFamilyName(), "e", 0 /* level */,
               110 /* epoch_number */)};
   std::vector<FileMetaData> file_metas;
   CreateDummyTableFiles(existing_files, &file_metas);
@@ -4132,7 +4132,7 @@ TEST_F(VersionSetTestMissingFiles, NoFileMissing) {
   for (ColumnFamilyData* cfd : *(versions_->GetColumnFamilySet())) {
     VersionStorageInfo* vstorage = cfd->current()->storage_info();
     const std::vector<FileMetaData*>& files = vstorage->LevelFiles(0);
-    if (cfd->GetName() == kDefaultColumnFamilyName) {
+    if (cfd->GetName() == GetDefaultColumnFamilyName()) {
       ASSERT_EQ(existing_files.size() - deleted_files.size(), files.size());
       bool has_deleted_file = false;
       for (const auto* fmeta : files) {
@@ -4152,7 +4152,7 @@ TEST_F(VersionSetTestMissingFiles, MinLogNumberToKeep2PC) {
   db_options_.allow_2pc = true;
   NewDB();
 
-  SstInfo sst(100, kDefaultColumnFamilyName, "a", 0 /* level */,
+  SstInfo sst(100, GetDefaultColumnFamilyName(), "a", 0 /* level */,
               100 /* epoch_number */);
   std::vector<FileMetaData> file_metas;
   CreateDummyTableFiles({sst}, &file_metas);

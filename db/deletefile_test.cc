@@ -621,7 +621,7 @@ TEST_F(DeleteFileTest, DeleteNonDefaultColumnFamily) {
   }
 
   Close();
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "new_cf"}, options);
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "new_cf"}, options);
 
   {
     std::unique_ptr<Iterator> itr(db_->NewIterator(ReadOptions(), handles_[1]));

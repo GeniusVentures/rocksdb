@@ -4004,26 +4004,25 @@ void SortFileByOverlappingRatio(
                            ? VersionStorageInfo::kNumberFilesToSort
                            : temp->size();
 
-  std::partial_sort(temp->begin(), temp->begin() + num_to_sort, temp->end(),
-                    [&](const Fsize& f1, const Fsize& f2) -> bool {
-                      // If score is the same, pick file with smaller keys.
-                      // This makes the algorithm more deterministic, and also
-                      // help the trivial move case to have more files to
-                      // extend.
-                      if (f1.file->marked_for_compaction ==
-                          f2.file->marked_for_compaction) {
-                        if (file_to_order[f1.file->fd.GetNumber()] ==
-                            file_to_order[f2.file->fd.GetNumber()]) {
-                          return icmp.Compare(f1.file->smallest,
-                                              f2.file->smallest) < 0;
-                        }
-                        return file_to_order[f1.file->fd.GetNumber()] <
-                               file_to_order[f2.file->fd.GetNumber()];
-                      } else {
-                        return f1.file->marked_for_compaction >
-                               f2.file->marked_for_compaction;
-                      }
-                    });
+  std::partial_sort(
+      temp->begin(), temp->begin() + num_to_sort, temp->end(),
+      [&](const Fsize& f1, const Fsize& f2) -> bool {
+        // If score is the same, pick file with smaller keys.
+        // This makes the algorithm more deterministic, and also
+        // help the trivial move case to have more files to
+        // extend.
+        if (f1.file->marked_for_compaction == f2.file->marked_for_compaction) {
+          if (file_to_order[f1.file->fd.GetNumber()] ==
+              file_to_order[f2.file->fd.GetNumber()]) {
+            return icmp.Compare(f1.file->smallest, f2.file->smallest) < 0;
+          }
+          return file_to_order[f1.file->fd.GetNumber()] <
+                 file_to_order[f2.file->fd.GetNumber()];
+        } else {
+          return f1.file->marked_for_compaction >
+                 f2.file->marked_for_compaction;
+        }
+      });
 }
 
 void SortFileByRoundRobin(const InternalKeyComparator& icmp,
@@ -6361,7 +6360,7 @@ Status VersionSet::ReduceNumberOfLevels(const std::string& dbname,
   Status status;
 
   std::vector<ColumnFamilyDescriptor> dummy;
-  ColumnFamilyDescriptor dummy_descriptor(kDefaultColumnFamilyName,
+  ColumnFamilyDescriptor dummy_descriptor(GetDefaultColumnFamilyName(),
                                           ColumnFamilyOptions(*options));
   dummy.push_back(dummy_descriptor);
   status = versions.Recover(dummy);

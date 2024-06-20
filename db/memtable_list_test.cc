@@ -55,7 +55,7 @@ class MemTableListTest : public testing::Test {
       if (udt_enabled_) {
         cf_options.comparator = test::BytewiseComparatorWithU64TsWrapper();
       }
-      cf_descs.emplace_back(kDefaultColumnFamilyName, cf_options);
+      cf_descs.emplace_back(GetDefaultColumnFamilyName(), cf_options);
       Status s = DB::Open(options, dbname, cf_descs, &handles, &db);
       EXPECT_OK(s);
 
@@ -119,7 +119,7 @@ class MemTableListTest : public testing::Test {
                         /*db_session_id=*/"", /*daily_offpeak_time_utc=*/"",
                         /*error_handler=*/nullptr, /*read_only=*/false);
     std::vector<ColumnFamilyDescriptor> cf_descs;
-    cf_descs.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions());
+    cf_descs.emplace_back(GetDefaultColumnFamilyName(), ColumnFamilyOptions());
     cf_descs.emplace_back("one", ColumnFamilyOptions());
     cf_descs.emplace_back("two", ColumnFamilyOptions());
 
@@ -171,7 +171,7 @@ class MemTableListTest : public testing::Test {
                         /*db_session_id=*/"", /*daily_offpeak_time_utc=*/"",
                         /*error_handler=*/nullptr, /*read_only=*/false);
     std::vector<ColumnFamilyDescriptor> cf_descs;
-    cf_descs.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions());
+    cf_descs.emplace_back(GetDefaultColumnFamilyName(), ColumnFamilyOptions());
     cf_descs.emplace_back("one", ColumnFamilyOptions());
     cf_descs.emplace_back("two", ColumnFamilyOptions());
     EXPECT_OK(versions.Recover(cf_descs, false));

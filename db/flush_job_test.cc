@@ -51,7 +51,7 @@ class FlushJobTestBase : public testing::Test {
         ucmp_(ucmp),
         options_(),
         db_options_(options_),
-        column_family_names_({kDefaultColumnFamilyName, "foo", "bar"}),
+        column_family_names_({GetDefaultColumnFamilyName(), "foo", "bar"}),
         table_cache_(NewLRUCache(50000, 16)),
         write_buffer_manager_(db_options_.db_write_buffer_size),
         shutting_down_(false),

@@ -305,7 +305,7 @@ class CompactionJobTestBase : public testing::Test {
                                 cfd_->internal_tbl_prop_coll_factories(),
                                 CompressionType::kNoCompression,
                                 CompressionOptions(), 0 /* column_family_id */,
-                                kDefaultColumnFamilyName, -1 /* level */),
+                                GetDefaultColumnFamilyName(), -1 /* level */),
             file_writer.get()));
     // Build table.
     for (const auto& kv : contents) {
@@ -582,7 +582,7 @@ class CompactionJobTestBase : public testing::Test {
     cf_options_.merge_operator = merge_op_;
     cf_options_.compaction_filter = compaction_filter_.get();
     std::vector<ColumnFamilyDescriptor> column_families;
-    column_families.emplace_back(kDefaultColumnFamilyName, cf_options_);
+    column_families.emplace_back(GetDefaultColumnFamilyName(), cf_options_);
 
     ASSERT_OK(versions_->Recover(column_families, false));
     cfd_ = versions_->GetColumnFamilySet()->GetDefault();

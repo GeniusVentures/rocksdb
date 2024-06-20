@@ -121,7 +121,8 @@ class CheckpointTest : public testing::Test {
                              const Options& options) {
     CreateColumnFamilies(cfs, options);
     std::vector<std::string> cfs_plus_default = cfs;
-    cfs_plus_default.insert(cfs_plus_default.begin(), kDefaultColumnFamilyName);
+    cfs_plus_default.insert(cfs_plus_default.begin(),
+                            GetDefaultColumnFamilyName());
     ReopenWithColumnFamilies(cfs_plus_default, options);
   }
 
@@ -504,7 +505,7 @@ TEST_F(CheckpointTest, CheckpointCF) {
   // Open snapshot and verify contents while DB is running
   options.create_if_missing = false;
   std::vector<std::string> cfs;
-  cfs = {kDefaultColumnFamilyName, "one", "two", "three", "four", "five"};
+  cfs = {GetDefaultColumnFamilyName(), "one", "two", "three", "four", "five"};
   std::vector<ColumnFamilyDescriptor> column_families;
   for (size_t i = 0; i < cfs.size(); ++i) {
     column_families.emplace_back(cfs[i], options);
@@ -562,7 +563,7 @@ TEST_F(CheckpointTest, CheckpointCFNoFlush) {
   // Open snapshot and verify contents while DB is running
   options.create_if_missing = false;
   std::vector<std::string> cfs;
-  cfs = {kDefaultColumnFamilyName, "one", "two", "three", "four", "five"};
+  cfs = {GetDefaultColumnFamilyName(), "one", "two", "three", "four", "five"};
   std::vector<ColumnFamilyDescriptor> column_families;
   for (size_t i = 0; i < cfs.size(); ++i) {
     column_families.emplace_back(cfs[i], options);
@@ -717,7 +718,8 @@ TEST_F(CheckpointTest, CurrentFileModifiedWhileCheckpointing2PC) {
 
   TransactionDB* snapshotDB;
   std::vector<ColumnFamilyDescriptor> column_families;
-  column_families.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions());
+  column_families.emplace_back(GetDefaultColumnFamilyName(),
+                               ColumnFamilyOptions());
   column_families.emplace_back("CFA", ColumnFamilyOptions());
   column_families.emplace_back("CFB", ColumnFamilyOptions());
   std::vector<ROCKSDB_NAMESPACE::ColumnFamilyHandle*> cf_handles;
@@ -939,7 +941,7 @@ TEST_F(CheckpointTest, CheckpointReadOnlyDBWithMultipleColumnFamilies) {
   }
   Close();
   Status s = ReadOnlyReopenWithColumnFamilies(
-      {kDefaultColumnFamilyName, "pikachu", "eevee"}, options);
+      {GetDefaultColumnFamilyName(), "pikachu", "eevee"}, options);
   ASSERT_OK(s);
   Checkpoint* checkpoint = nullptr;
   ASSERT_OK(Checkpoint::Create(db_, &checkpoint));
@@ -949,7 +951,7 @@ TEST_F(CheckpointTest, CheckpointReadOnlyDBWithMultipleColumnFamilies) {
   Close();
 
   std::vector<ColumnFamilyDescriptor> column_families{
-      {kDefaultColumnFamilyName, options},
+      {GetDefaultColumnFamilyName(), options},
       {"pikachu", options},
       {"eevee", options}};
   DB* snapshot_db = nullptr;

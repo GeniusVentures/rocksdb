@@ -189,7 +189,7 @@ class TransactionTestBase : public ::testing::Test {
   Status OpenWithStackableDB() {
     std::vector<size_t> compaction_enabled_cf_indices;
     std::vector<ColumnFamilyDescriptor> column_families{ColumnFamilyDescriptor(
-        kDefaultColumnFamilyName, ColumnFamilyOptions(options))};
+        GetDefaultColumnFamilyName(), ColumnFamilyOptions(options))};
 
     TransactionDB::PrepareWrap(&options, &column_families,
                                &compaction_enabled_cf_indices);

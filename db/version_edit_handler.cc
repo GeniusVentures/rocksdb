@@ -175,13 +175,13 @@ Status VersionEditHandler::Initialize() {
     for (const auto& cf_desc : column_families_) {
       name_to_options_.emplace(cf_desc.name, cf_desc.options);
     }
-    auto default_cf_iter = name_to_options_.find(kDefaultColumnFamilyName);
+    auto default_cf_iter = name_to_options_.find(GetDefaultColumnFamilyName());
     if (default_cf_iter == name_to_options_.end()) {
       s = Status::InvalidArgument("Default column family not specified");
     }
     if (s.ok()) {
       VersionEdit default_cf_edit;
-      default_cf_edit.AddColumnFamily(kDefaultColumnFamilyName);
+      default_cf_edit.AddColumnFamily(GetDefaultColumnFamilyName());
       default_cf_edit.SetColumnFamily(0);
       ColumnFamilyData* cfd =
           CreateCfAndInit(default_cf_iter->second, default_cf_edit);
@@ -236,7 +236,7 @@ Status VersionEditHandler::OnColumnFamilyAdd(VersionEdit& edit,
     // to specify
     ColumnFamilyData* tmp_cfd = nullptr;
     bool is_persistent_stats_column_family =
-        cf_name.compare(kPersistentStatsColumnFamilyName) == 0;
+        cf_name.compare(GetPersistentStatsColumnFamilyName()) == 0;
     if (cf_options == name_to_options_.end() &&
         !is_persistent_stats_column_family) {
       column_families_not_found_.emplace(edit.GetColumnFamily(), cf_name);

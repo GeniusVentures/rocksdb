@@ -75,7 +75,7 @@ class ListColumnFamiliesHandler : public VersionEditHandlerBase {
  private:
   // default column family is always implicitly there
   std::map<uint32_t, std::string> column_family_names_{
-      {0, kDefaultColumnFamilyName}};
+      {0, GetDefaultColumnFamilyName()}};
 };
 
 class FileChecksumRetriever : public VersionEditHandlerBase {

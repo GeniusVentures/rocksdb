@@ -269,7 +269,8 @@ TEST_P(DbKvChecksumTest, MemTableAddWithColumnFamilyCorrupted) {
   while (MoreBytesToCorrupt()) {
     // Failed memtable insert always leads to read-only mode, so we have to
     // reopen for every attempt.
-    ReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu"}, options);
+    ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "pikachu"},
+                             options);
 
     SyncPoint::GetInstance()->EnableProcessing();
     ASSERT_TRUE(ExecuteWrite(handles_[1]).IsCorruption());
@@ -349,7 +350,8 @@ TEST_P(DbKvChecksumTest, WriteToWALWithColumnFamilyCorrupted) {
   while (MoreBytesToCorrupt()) {
     // Corrupted write batch leads to read-only mode, so we have to
     // reopen for every attempt.
-    ReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu"}, options);
+    ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "pikachu"},
+                             options);
     auto log_size_pre_write = dbfull()->TEST_total_log_size();
 
     SyncPoint::GetInstance()->EnableProcessing();
@@ -597,7 +599,7 @@ TEST_P(DbKvChecksumTestMergedBatch, WriteToWALWithColumnFamilyCorrupted) {
   SyncPoint::GetInstance()->EnableProcessing();
   while (corrupt_byte_offset < total_bytes) {
     // Reopen DB since it failed WAL write which lead to read-only mode
-    ReopenWithColumnFamilies({kDefaultColumnFamilyName, "ramen"}, options);
+    ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "ramen"}, options);
     SyncPoint::GetInstance()->EnableProcessing();
     auto log_size_pre_write = dbfull()->TEST_total_log_size();
     leader_batch_and_status =

@@ -600,7 +600,8 @@ void DBTestBase::CreateAndReopenWithCF(const std::vector<std::string>& cfs,
                                        const Options& options) {
   CreateColumnFamilies(cfs, options);
   std::vector<std::string> cfs_plus_default = cfs;
-  cfs_plus_default.insert(cfs_plus_default.begin(), kDefaultColumnFamilyName);
+  cfs_plus_default.insert(cfs_plus_default.begin(),
+                          GetDefaultColumnFamilyName());
   ReopenWithColumnFamilies(cfs_plus_default, options);
 }
 
@@ -978,7 +979,8 @@ void DBTestBase::CheckAllEntriesWithFifoReopen(
   ASSERT_EQ(AllEntriesFor(user_key, cf), expected_value);
 
   std::vector<std::string> cfs_plus_default = cfs;
-  cfs_plus_default.insert(cfs_plus_default.begin(), kDefaultColumnFamilyName);
+  cfs_plus_default.insert(cfs_plus_default.begin(),
+                          GetDefaultColumnFamilyName());
 
   Options fifo_options(options);
   fifo_options.compaction_style = kCompactionStyleFIFO;

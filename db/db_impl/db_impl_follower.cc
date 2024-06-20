@@ -248,7 +248,7 @@ Status DB::OpenAsFollower(const Options& options, const std::string& dbname,
   DBOptions db_options(options);
   ColumnFamilyOptions cf_options(options);
   std::vector<ColumnFamilyDescriptor> column_families;
-  column_families.emplace_back(kDefaultColumnFamilyName, cf_options);
+  column_families.emplace_back(GetDefaultColumnFamilyName(), cf_options);
   std::vector<ColumnFamilyHandle*> handles;
 
   Status s = DB::OpenAsFollower(db_options, dbname, leader_path,

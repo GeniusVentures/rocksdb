@@ -115,9 +115,15 @@
 
 namespace ROCKSDB_NAMESPACE {
 
-const std::string kDefaultColumnFamilyName("default");
-const std::string kPersistentStatsColumnFamilyName(
-    "___rocksdb_stats_history___");
+const std::string& GetDefaultColumnFamilyName() {
+  static const std::string kDefaultColumnFamilyName("default");
+  return kDefaultColumnFamilyName;
+}
+const std::string& GetPersistentStatsColumnFamilyName() {
+  static const std::string kPersistentStatsColumnFamilyName(
+      "___rocksdb_stats_history___");
+  return kPersistentStatsColumnFamilyName;
+}
 void DumpRocksDBBuildVersion(Logger* log);
 
 CompressionType GetCompressionFlush(

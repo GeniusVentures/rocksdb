@@ -430,7 +430,7 @@ LDBCommand::LDBCommand(const std::map<std::string, std::string>& options,
   if (itr != options.end()) {
     column_family_name_ = itr->second;
   } else {
-    column_family_name_ = kDefaultColumnFamilyName;
+    column_family_name_ = GetDefaultColumnFamilyName();
   }
 
   itr = options.find(ARG_SECONDARY_PATH);
@@ -549,7 +549,7 @@ void LDBCommand::OpenDB() {
   } else {
     // We successfully opened DB in single column family mode.
     assert(column_families_.empty());
-    if (column_family_name_ != kDefaultColumnFamilyName) {
+    if (column_family_name_ != GetDefaultColumnFamilyName()) {
       exec_state_ = LDBCommandExecuteResult::Failed(
           "Non-existing column family " + column_family_name_);
       CloseDB();
@@ -2470,7 +2470,7 @@ Status ReduceDBLevelsCommand::GetOldNumOfLevels(Options& opt, int* levels) {
                       opt.daily_offpeak_time_utc,
                       /*error_handler=*/nullptr, /*read_only=*/true);
   std::vector<ColumnFamilyDescriptor> dummy;
-  ColumnFamilyDescriptor dummy_descriptor(kDefaultColumnFamilyName,
+  ColumnFamilyDescriptor dummy_descriptor(GetDefaultColumnFamilyName(),
                                           ColumnFamilyOptions(opt));
   dummy.push_back(dummy_descriptor);
   // We rely the VersionSet::Recover to tell us the internal data structures
@@ -4602,7 +4602,7 @@ void DBLiveFilesMetadataDumperCommand::DoCommand() {
               NormalizePath(sst_metadata.db_path + "/" + sst_metadata.name);
           all_files.emplace_back(filename, level, cf);
         }  // End of for-loop over sst files
-      }    // End of for-loop over levels
+      }  // End of for-loop over levels
 
       const auto& blob_files = column_metadata.blob_files;
       for (const auto& blob_metadata : blob_files) {
@@ -4616,7 +4616,7 @@ void DBLiveFilesMetadataDumperCommand::DoCommand() {
         // Level for blob files is encoded as -1
         all_files.emplace_back(filename, -1, cf);
       }  // End of for-loop over blob files
-    }    // End of for-loop over column metadata
+    }  // End of for-loop over column metadata
 
     // Sort by filename (i.e. first entry in tuple)
     std::sort(all_files.begin(), all_files.end());
@@ -4655,7 +4655,7 @@ void DBLiveFilesMetadataDumperCommand::DoCommand() {
               NormalizePath(sst_metadata.db_path + "/" + sst_metadata.name);
           std::cout << filename << std::endl;
         }  // End of for-loop over sst files
-      }    // End of for-loop over levels
+      }  // End of for-loop over levels
 
       std::cout << "Live Blob Files:" << std::endl;
       const auto& blob_files = column_metadata.blob_files;
@@ -4669,8 +4669,8 @@ void DBLiveFilesMetadataDumperCommand::DoCommand() {
             blob_metadata.blob_file_path + "/" + blob_metadata.blob_file_name);
         std::cout << filename << std::endl;
       }  // End of for-loop over blob files
-    }    // End of for-loop over column metadata
-  }      // End of else ("not sort_by_filename")
+    }  // End of for-loop over column metadata
+  }  // End of else ("not sort_by_filename")
   std::cout << "------------------------------" << std::endl;
 }
 
@@ -4955,7 +4955,7 @@ void UnsafeRemoveSstFileCommand::DoCommand() {
 
   OfflineManifestWriter w(options_, db_path_);
   if (column_families_.empty()) {
-    column_families_.emplace_back(kDefaultColumnFamilyName, options_);
+    column_families_.emplace_back(GetDefaultColumnFamilyName(), options_);
   }
   Status s = w.Recover(column_families_);
 
@@ -5027,7 +5027,7 @@ void UpdateManifestCommand::DoCommand() {
   experimental::UpdateManifestForFilesStateOptions opts;
   opts.update_temperatures = update_temperatures_;
   if (column_families_.empty()) {
-    column_families_.emplace_back(kDefaultColumnFamilyName, options_);
+    column_families_.emplace_back(GetDefaultColumnFamilyName(), options_);
   }
   Status s = experimental::UpdateManifestForFilesState(options_, db_path_,
                                                        column_families_);

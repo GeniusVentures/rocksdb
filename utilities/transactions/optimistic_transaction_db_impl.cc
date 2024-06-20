@@ -3,7 +3,6 @@
 //  COPYING file in the root directory) and Apache 2.0 License
 //  (found in the LICENSE.Apache file in the root directory).
 
-
 #include "utilities/transactions/optimistic_transaction_db_impl.h"
 
 #include <string>
@@ -43,7 +42,7 @@ Status OptimisticTransactionDB::Open(const Options& options,
   DBOptions db_options(options);
   ColumnFamilyOptions cf_options(options);
   std::vector<ColumnFamilyDescriptor> column_families;
-  column_families.emplace_back(kDefaultColumnFamilyName, cf_options);
+  column_families.emplace_back(GetDefaultColumnFamilyName(), cf_options);
   std::vector<ColumnFamilyHandle*> handles;
   Status s = Open(db_options, dbname, column_families, &handles, dbptr);
   if (s.ok()) {

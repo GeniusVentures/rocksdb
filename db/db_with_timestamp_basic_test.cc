@@ -161,7 +161,7 @@ TEST_F(DBBasicTestWithTimestamp, MixedCfs) {
   Close();
 
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
   cf_descs.emplace_back("data", options1);
   options.create_if_missing = false;
   s = DB::Open(options, dbname_, cf_descs, &handles_, &db_);
@@ -598,7 +598,7 @@ TEST_F(DBBasicTestWithTimestamp, TrimHistoryTest) {
 
   ColumnFamilyOptions cf_options(options);
   std::vector<ColumnFamilyDescriptor> column_families;
-  column_families.emplace_back(kDefaultColumnFamilyName, cf_options);
+  column_families.emplace_back(GetDefaultColumnFamilyName(), cf_options);
   DBOptions db_options(options);
 
   // Trim data whose version > Timestamp(5, 0), read(k1, ts(7)) <- NOT_FOUND.
@@ -641,7 +641,7 @@ TEST_F(DBBasicTestWithTimestamp, OpenAndTrimHistoryInvalidOptionTest) {
 
   ColumnFamilyOptions cf_options(options);
   std::vector<ColumnFamilyDescriptor> column_families;
-  column_families.emplace_back(kDefaultColumnFamilyName, cf_options);
+  column_families.emplace_back(GetDefaultColumnFamilyName(), cf_options);
   DBOptions db_options(options);
 
   // OpenAndTrimHistory should not work with avoid_flush_during_recovery
@@ -3190,7 +3190,6 @@ TEST_F(DBBasicTestWithTimestamp, MultiGetNoReturnTs) {
   }
   Close();
 }
-
 
 INSTANTIATE_TEST_CASE_P(
     Timestamp, DBBasicTestWithTimestampCompressionSettings,

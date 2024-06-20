@@ -57,7 +57,7 @@ int main() {
 
   std::vector<ColumnFamilyDescriptor> cf_descs;
   cf_descs.push_back(
-      {ROCKSDB_NAMESPACE::kDefaultColumnFamilyName, ColumnFamilyOptions()});
+      {ROCKSDB_NAMESPACE::GetDefaultColumnFamilyName(), ColumnFamilyOptions()});
   cf_descs.push_back({"new_cf", ColumnFamilyOptions()});
 
   // initialize BlockBasedTableOptions

@@ -62,7 +62,7 @@ class OptimisticTransactionTest
     ColumnFamilyOptions cf_options(options);
     std::vector<ColumnFamilyDescriptor> column_families;
     std::vector<ColumnFamilyHandle*> handles;
-    column_families.emplace_back(kDefaultColumnFamilyName, cf_options);
+    column_families.emplace_back(GetDefaultColumnFamilyName(), cf_options);
     OptimisticTransactionDB* raw_txn_db = nullptr;
     Status s = OptimisticTransactionDB::Open(
         options, occ_opts, dbname, column_families, &handles, &raw_txn_db);
@@ -653,7 +653,8 @@ TEST_P(OptimisticTransactionTest, ColumnFamiliesTest) {
   // open DB with three column families
   std::vector<ColumnFamilyDescriptor> column_families;
   // have to open default column family
-  column_families.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions());
+  column_families.emplace_back(GetDefaultColumnFamilyName(),
+                               ColumnFamilyOptions());
   // open the new column families
   column_families.emplace_back("CFA", ColumnFamilyOptions());
   column_families.emplace_back("CFB", ColumnFamilyOptions());

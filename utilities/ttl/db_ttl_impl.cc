@@ -338,7 +338,7 @@ Status DBWithTTL::Open(const Options& options, const std::string& dbname,
   DBOptions db_options(options);
   ColumnFamilyOptions cf_options(options);
   std::vector<ColumnFamilyDescriptor> column_families;
-  column_families.emplace_back(kDefaultColumnFamilyName, cf_options);
+  column_families.emplace_back(GetDefaultColumnFamilyName(), cf_options);
   std::vector<ColumnFamilyHandle*> handles;
   Status s = DBWithTTL::Open(db_options, dbname, column_families, &handles,
                              dbptr, {ttl}, read_only);

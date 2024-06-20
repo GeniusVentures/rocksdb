@@ -7,8 +7,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "rocksdb/options.h"
-
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -25,6 +23,7 @@
 #include "rocksdb/convenience.h"
 #include "rocksdb/db.h"
 #include "rocksdb/env.h"
+#include "rocksdb/options.h"
 #include "rocksdb/table.h"
 #include "rocksdb/utilities/transaction_db.h"
 #include "rocksdb/write_batch.h"
@@ -349,7 +348,7 @@ TEST_F(CorruptionTest, PostPITRCorruptionWALsRetained) {
 
   const std::string test_cf_name = "test_cf";
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, ColumnFamilyOptions());
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), ColumnFamilyOptions());
   cf_descs.emplace_back(test_cf_name, ColumnFamilyOptions());
 
   uint64_t log_num;
@@ -1185,7 +1184,7 @@ TEST_P(CrashDuringRecoveryWithCorruptionTest, CrashDuringRecovery) {
   CloseDb();
 
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
   cf_descs.emplace_back(test_cf_name, options);
   std::vector<ColumnFamilyHandle*> handles;
 
@@ -1358,7 +1357,7 @@ TEST_P(CrashDuringRecoveryWithCorruptionTest, TxnDbCrashDuringRecovery) {
   CloseDb();
 
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
   cf_descs.emplace_back(test_cf_name, options);
   std::vector<ColumnFamilyHandle*> handles;
 
@@ -1554,7 +1553,7 @@ TEST_P(CrashDuringRecoveryWithCorruptionTest, CrashDuringRecoveryWithFlush) {
   CloseDb();
 
   std::vector<ColumnFamilyDescriptor> cf_descs;
-  cf_descs.emplace_back(kDefaultColumnFamilyName, options);
+  cf_descs.emplace_back(GetDefaultColumnFamilyName(), options);
   cf_descs.emplace_back(test_cf_name, options);
   std::vector<ColumnFamilyHandle*> handles;
 

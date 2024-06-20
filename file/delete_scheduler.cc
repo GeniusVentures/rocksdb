@@ -3,7 +3,6 @@
 //  COPYING file in the root directory) and Apache 2.0 License
 //  (found in the LICENSE.Apache file in the root directory).
 
-
 #include "file/delete_scheduler.h"
 
 #include <cinttypes>
@@ -130,12 +129,14 @@ std::map<std::string, Status> DeleteScheduler::GetBackgroundErrors() {
   InstrumentedMutexLock l(&mu_);
   return bg_errors_;
 }
-
-const std::string DeleteScheduler::kTrashExtension = ".trash";
+const std::string& DeleteScheduler::GetTrashExtension() {
+  static const std::string kTrashExtension = ".trash";
+  return kTrashExtension;
+}
 bool DeleteScheduler::IsTrashFile(const std::string& file_path) {
-  return (file_path.size() >= kTrashExtension.size() &&
-          file_path.rfind(kTrashExtension) ==
-              file_path.size() - kTrashExtension.size());
+  return (file_path.size() >= GetTrashExtension().size() &&
+          file_path.rfind(GetTrashExtension()) ==
+              file_path.size() - GetTrashExtension().size());
 }
 
 Status DeleteScheduler::CleanupDirectory(Env* env, SstFileManagerImpl* sfm,
@@ -190,7 +191,7 @@ Status DeleteScheduler::MarkAsTrash(const std::string& file_path,
     return Status::OK();
   }
 
-  *trash_file = file_path + kTrashExtension;
+  *trash_file = file_path + GetTrashExtension();
   // TODO(tec) : Implement Env::RenameFileIfNotExist and remove
   //             file_move_mu mutex.
   int cnt = 0;
@@ -204,7 +205,7 @@ Status DeleteScheduler::MarkAsTrash(const std::string& file_path,
       break;
     } else if (s.ok()) {
       // Name conflict, generate new random suffix
-      *trash_file = file_path + std::to_string(cnt) + kTrashExtension;
+      *trash_file = file_path + std::to_string(cnt) + GetTrashExtension();
     } else {
       // Error during FileExists call, we cannot continue
       break;
@@ -409,4 +410,3 @@ void DeleteScheduler::MaybeCreateBackgroundThread() {
 }
 
 }  // namespace ROCKSDB_NAMESPACE
-

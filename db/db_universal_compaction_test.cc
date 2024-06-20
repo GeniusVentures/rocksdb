@@ -1857,7 +1857,7 @@ TEST_P(DBTestUniversalManualCompactionOutputPathId,
   ASSERT_EQ(0, TotalLiveFilesAtPath(1, options.db_paths[0].path));
   ASSERT_EQ(1, TotalLiveFilesAtPath(1, options.db_paths[1].path));
 
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu"}, options);
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "pikachu"}, options);
   ASSERT_EQ(1, TotalLiveFiles(1));
   ASSERT_EQ(0, TotalLiveFilesAtPath(1, options.db_paths[0].path));
   ASSERT_EQ(1, TotalLiveFilesAtPath(1, options.db_paths[1].path));
@@ -1867,7 +1867,7 @@ TEST_P(DBTestUniversalManualCompactionOutputPathId,
   ASSERT_EQ(1, TotalLiveFilesAtPath(1, options.db_paths[0].path));
   ASSERT_EQ(1, TotalLiveFilesAtPath(1, options.db_paths[1].path));
 
-  ReopenWithColumnFamilies({kDefaultColumnFamilyName, "pikachu"}, options);
+  ReopenWithColumnFamilies({GetDefaultColumnFamilyName(), "pikachu"}, options);
   ASSERT_EQ(2, TotalLiveFiles(1));
   ASSERT_EQ(1, TotalLiveFilesAtPath(1, options.db_paths[0].path));
   ASSERT_EQ(1, TotalLiveFilesAtPath(1, options.db_paths[1].path));
@@ -2369,7 +2369,6 @@ TEST_F(DBTestUniversalCompaction2, PeriodicCompactionOffpeak) {
 }
 
 }  // namespace ROCKSDB_NAMESPACE
-
 
 int main(int argc, char** argv) {
   ROCKSDB_NAMESPACE::port::InstallStackTraceHandler();

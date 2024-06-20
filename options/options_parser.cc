@@ -347,7 +347,7 @@ Status RocksDBOptionsParser::CheckSection(const OptionSection section,
     }
     has_db_options_ = true;
   } else if (section == kOptionSectionCFOptions) {
-    bool is_default_cf = (section_arg == kDefaultColumnFamilyName);
+    bool is_default_cf = (section_arg == GetDefaultColumnFamilyName());
     if (cf_opts_.size() == 0 && !is_default_cf) {
       return InvalidArgument(
           line_num,
