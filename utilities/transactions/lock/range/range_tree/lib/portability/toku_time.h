@@ -131,6 +131,11 @@ static inline tokutime_t toku_time_now(void) {
   uint64_t result;
   __asm __volatile__("mrs %[rt], cntvct_el0" : [rt] "=r"(result));
   return result;
+#elif defined(__arm__)
+  uint32_t lo, hi;
+  __asm __volatile__("mrrc p15, 1, %[lo], %[hi], c14"
+                     : [lo] "=r"(lo), [hi] "=r"(hi));
+  return (uint64_t)hi << 32 | lo;
 #elif defined(__powerpc__)
   return __ppc_get_timebase();
 #elif defined(__s390x__)
@@ -156,7 +161,7 @@ static inline tokutime_t toku_time_now(void) {
   return cycles;
 #elif defined(__loongarch64)
   unsigned long result;
-  asm volatile ("rdtime.d\t%0,$r0" : "=r" (result));
+  asm volatile("rdtime.d\t%0,$r0" : "=r"(result));
   return result;
 #else
 #error No timer implementation for this platform
