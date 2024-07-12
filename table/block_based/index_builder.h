@@ -376,9 +376,9 @@ class HashIndexBuilder : public IndexBuilder {
     Status s = primary_index_builder_.Finish(index_blocks,
                                              last_partition_block_handle);
     index_blocks->meta_blocks.insert(
-        {kHashIndexPrefixesBlock.c_str(), prefix_block_});
+        {GetHashIndexPrefixesBlock().c_str(), prefix_block_});
     index_blocks->meta_blocks.insert(
-        {kHashIndexPrefixesMetadataBlock.c_str(), prefix_meta_block_});
+        {GetHashIndexPrefixesMetadataBlock().c_str(), prefix_meta_block_});
     return s;
   }
 

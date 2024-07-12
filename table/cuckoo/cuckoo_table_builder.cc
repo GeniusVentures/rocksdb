@@ -390,7 +390,7 @@ Status CuckooTableBuilder::Finish() {
     return status_;
   }
 
-  meta_index_builder.Add(kPropertiesBlockName, property_block_handle);
+  meta_index_builder.Add(GetPropertiesBlockName(), property_block_handle);
   Slice meta_index_block = meta_index_builder.Finish();
 
   BlockHandle meta_index_block_handle;

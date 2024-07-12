@@ -26,13 +26,28 @@
 
 namespace ROCKSDB_NAMESPACE {
 
-const std::string kPropertiesBlockName = "rocksdb.properties";
+const std::string& GetPropertiesBlockName() {
+  const std::string kPropertiesBlockName = "rocksdb.properties";
+  return kPropertiesBlockName;
+}
 // NB: only used with format_version >= 6
-const std::string kIndexBlockName = "rocksdb.index";
+const std::string& GetIndexBlockName() {
+  const std::string kIndexBlockName = "rocksdb.index";
+  return kIndexBlockName;
+}
 // Old property block name for backward compatibility
-const std::string kPropertiesBlockOldName = "rocksdb.stats";
-const std::string kCompressionDictBlockName = "rocksdb.compression_dict";
-const std::string kRangeDelBlockName = "rocksdb.range_del";
+const std::string& GetPropertiesBlockOldName() {
+  const std::string kPropertiesBlockOldName = "rocksdb.stats";
+  return kPropertiesBlockOldName;
+}
+const std::string& GetCompressionDictBlockName() {
+  const std::string kCompressionDictBlockName = "rocksdb.compression_dict";
+  return kCompressionDictBlockName;
+}
+const std::string& GetRangeDelBlockName() {
+  const std::string kRangeDelBlockName = "rocksdb.range_del";
+  return kRangeDelBlockName;
+}
 
 MetaIndexBuilder::MetaIndexBuilder()
     : meta_index_block_(new BlockBuilder(1 /* restart interval */)) {}
@@ -82,86 +97,101 @@ void PropertyBlockBuilder::AddTableProperty(const TableProperties& props) {
   TEST_SYNC_POINT_CALLBACK("PropertyBlockBuilder::AddTableProperty:Start",
                            const_cast<TableProperties*>(&props));
 
-  Add(TablePropertiesNames::kOriginalFileNumber, props.orig_file_number);
-  Add(TablePropertiesNames::kRawKeySize, props.raw_key_size);
-  Add(TablePropertiesNames::kRawValueSize, props.raw_value_size);
-  Add(TablePropertiesNames::kDataSize, props.data_size);
-  Add(TablePropertiesNames::kIndexSize, props.index_size);
+  Add(std::string(TablePropertiesNames::kOriginalFileNumber),
+      props.orig_file_number);
+  Add(std::string(TablePropertiesNames::kRawKeySize), props.raw_key_size);
+  Add(std::string(TablePropertiesNames::kRawValueSize), props.raw_value_size);
+  Add(std::string(TablePropertiesNames::kDataSize), props.data_size);
+  Add(std::string(TablePropertiesNames::kIndexSize), props.index_size);
   if (props.index_partitions != 0) {
-    Add(TablePropertiesNames::kIndexPartitions, props.index_partitions);
-    Add(TablePropertiesNames::kTopLevelIndexSize, props.top_level_index_size);
+    Add(std::string(TablePropertiesNames::kIndexPartitions),
+        props.index_partitions);
+    Add(std::string(TablePropertiesNames::kTopLevelIndexSize),
+        props.top_level_index_size);
   }
-  Add(TablePropertiesNames::kIndexKeyIsUserKey, props.index_key_is_user_key);
-  Add(TablePropertiesNames::kIndexValueIsDeltaEncoded,
+  Add(std::string(TablePropertiesNames::kIndexKeyIsUserKey),
+      props.index_key_is_user_key);
+  Add(std::string(TablePropertiesNames::kIndexValueIsDeltaEncoded),
       props.index_value_is_delta_encoded);
-  Add(TablePropertiesNames::kNumEntries, props.num_entries);
-  Add(TablePropertiesNames::kNumFilterEntries, props.num_filter_entries);
-  Add(TablePropertiesNames::kDeletedKeys, props.num_deletions);
-  Add(TablePropertiesNames::kMergeOperands, props.num_merge_operands);
-  Add(TablePropertiesNames::kNumRangeDeletions, props.num_range_deletions);
-  Add(TablePropertiesNames::kNumDataBlocks, props.num_data_blocks);
-  Add(TablePropertiesNames::kFilterSize, props.filter_size);
-  Add(TablePropertiesNames::kFormatVersion, props.format_version);
-  Add(TablePropertiesNames::kFixedKeyLen, props.fixed_key_len);
-  Add(TablePropertiesNames::kColumnFamilyId, props.column_family_id);
-  Add(TablePropertiesNames::kCreationTime, props.creation_time);
-  Add(TablePropertiesNames::kOldestKeyTime, props.oldest_key_time);
+  Add(std::string(TablePropertiesNames::kNumEntries), props.num_entries);
+  Add(std::string(TablePropertiesNames::kNumFilterEntries),
+      props.num_filter_entries);
+  Add(std::string(TablePropertiesNames::kDeletedKeys), props.num_deletions);
+  Add(std::string(TablePropertiesNames::kMergeOperands),
+      props.num_merge_operands);
+  Add(std::string(TablePropertiesNames::kNumRangeDeletions),
+      props.num_range_deletions);
+  Add(std::string(TablePropertiesNames::kNumDataBlocks), props.num_data_blocks);
+  Add(std::string(TablePropertiesNames::kFilterSize), props.filter_size);
+  Add(std::string(TablePropertiesNames::kFormatVersion), props.format_version);
+  Add(std::string(TablePropertiesNames::kFixedKeyLen), props.fixed_key_len);
+  Add(std::string(TablePropertiesNames::kColumnFamilyId),
+      props.column_family_id);
+  Add(std::string(TablePropertiesNames::kCreationTime), props.creation_time);
+  Add(std::string(TablePropertiesNames::kOldestKeyTime), props.oldest_key_time);
   if (props.file_creation_time > 0) {
-    Add(TablePropertiesNames::kFileCreationTime, props.file_creation_time);
+    Add(std::string(TablePropertiesNames::kFileCreationTime),
+        props.file_creation_time);
   }
   if (props.slow_compression_estimated_data_size > 0) {
-    Add(TablePropertiesNames::kSlowCompressionEstimatedDataSize,
+    Add(std::string(TablePropertiesNames::kSlowCompressionEstimatedDataSize),
         props.slow_compression_estimated_data_size);
   }
   if (props.fast_compression_estimated_data_size > 0) {
-    Add(TablePropertiesNames::kFastCompressionEstimatedDataSize,
+    Add(std::string(TablePropertiesNames::kFastCompressionEstimatedDataSize),
         props.fast_compression_estimated_data_size);
   }
-  Add(TablePropertiesNames::kTailStartOffset, props.tail_start_offset);
+  Add(std::string(TablePropertiesNames::kTailStartOffset),
+      props.tail_start_offset);
   if (props.user_defined_timestamps_persisted == 0) {
-    Add(TablePropertiesNames::kUserDefinedTimestampsPersisted,
+    Add(std::string(TablePropertiesNames::kUserDefinedTimestampsPersisted),
         props.user_defined_timestamps_persisted);
   }
   if (!props.db_id.empty()) {
-    Add(TablePropertiesNames::kDbId, props.db_id);
+    Add(std::string(TablePropertiesNames::kDbId), props.db_id);
   }
   if (!props.db_session_id.empty()) {
-    Add(TablePropertiesNames::kDbSessionId, props.db_session_id);
+    Add(std::string(TablePropertiesNames::kDbSessionId), props.db_session_id);
   }
   if (!props.db_host_id.empty()) {
-    Add(TablePropertiesNames::kDbHostId, props.db_host_id);
+    Add(std::string(TablePropertiesNames::kDbHostId), props.db_host_id);
   }
 
   if (!props.filter_policy_name.empty()) {
-    Add(TablePropertiesNames::kFilterPolicy, props.filter_policy_name);
+    Add(std::string(TablePropertiesNames::kFilterPolicy),
+        props.filter_policy_name);
   }
   if (!props.comparator_name.empty()) {
-    Add(TablePropertiesNames::kComparator, props.comparator_name);
+    Add(std::string(TablePropertiesNames::kComparator), props.comparator_name);
   }
 
   if (!props.merge_operator_name.empty()) {
-    Add(TablePropertiesNames::kMergeOperator, props.merge_operator_name);
+    Add(std::string(TablePropertiesNames::kMergeOperator),
+        props.merge_operator_name);
   }
   if (!props.prefix_extractor_name.empty()) {
-    Add(TablePropertiesNames::kPrefixExtractorName,
+    Add(std::string(TablePropertiesNames::kPrefixExtractorName),
         props.prefix_extractor_name);
   }
   if (!props.property_collectors_names.empty()) {
-    Add(TablePropertiesNames::kPropertyCollectors,
+    Add(std::string(TablePropertiesNames::kPropertyCollectors),
         props.property_collectors_names);
   }
   if (!props.column_family_name.empty()) {
-    Add(TablePropertiesNames::kColumnFamilyName, props.column_family_name);
+    Add(std::string(TablePropertiesNames::kColumnFamilyName),
+        props.column_family_name);
   }
 
   if (!props.compression_name.empty()) {
-    Add(TablePropertiesNames::kCompression, props.compression_name);
+    Add(std::string(TablePropertiesNames::kCompression),
+        props.compression_name);
   }
   if (!props.compression_options.empty()) {
-    Add(TablePropertiesNames::kCompressionOptions, props.compression_options);
+    Add(std::string(TablePropertiesNames::kCompressionOptions),
+        props.compression_options);
   }
   if (!props.seqno_to_time_mapping.empty()) {
-    Add(TablePropertiesNames::kSequenceNumberTimeMapping,
+    Add(std::string(TablePropertiesNames::kSequenceNumberTimeMapping),
         props.seqno_to_time_mapping);
   }
 }
@@ -275,52 +305,57 @@ Status ReadTablePropertiesHelper(
   std::unique_ptr<TableProperties> new_table_properties{new TableProperties};
   // All pre-defined properties of type uint64_t
   std::unordered_map<std::string, uint64_t*> predefined_uint64_properties = {
-      {TablePropertiesNames::kOriginalFileNumber,
+      {std::string(TablePropertiesNames::kOriginalFileNumber),
        &new_table_properties->orig_file_number},
-      {TablePropertiesNames::kDataSize, &new_table_properties->data_size},
-      {TablePropertiesNames::kIndexSize, &new_table_properties->index_size},
-      {TablePropertiesNames::kIndexPartitions,
+      {std::string(TablePropertiesNames::kDataSize),
+       &new_table_properties->data_size},
+      {std::string(TablePropertiesNames::kIndexSize),
+       &new_table_properties->index_size},
+      {std::string(TablePropertiesNames::kIndexPartitions),
        &new_table_properties->index_partitions},
-      {TablePropertiesNames::kTopLevelIndexSize,
+      {std::string(TablePropertiesNames::kTopLevelIndexSize),
        &new_table_properties->top_level_index_size},
-      {TablePropertiesNames::kIndexKeyIsUserKey,
+      {std::string(TablePropertiesNames::kIndexKeyIsUserKey),
        &new_table_properties->index_key_is_user_key},
-      {TablePropertiesNames::kIndexValueIsDeltaEncoded,
+      {std::string(TablePropertiesNames::kIndexValueIsDeltaEncoded),
        &new_table_properties->index_value_is_delta_encoded},
-      {TablePropertiesNames::kFilterSize, &new_table_properties->filter_size},
-      {TablePropertiesNames::kRawKeySize, &new_table_properties->raw_key_size},
-      {TablePropertiesNames::kRawValueSize,
+      {std::string(TablePropertiesNames::kFilterSize),
+       &new_table_properties->filter_size},
+      {std::string(TablePropertiesNames::kRawKeySize),
+       &new_table_properties->raw_key_size},
+      {std::string(TablePropertiesNames::kRawValueSize),
        &new_table_properties->raw_value_size},
-      {TablePropertiesNames::kNumDataBlocks,
+      {std::string(TablePropertiesNames::kNumDataBlocks),
        &new_table_properties->num_data_blocks},
-      {TablePropertiesNames::kNumEntries, &new_table_properties->num_entries},
-      {TablePropertiesNames::kNumFilterEntries,
+      {std::string(TablePropertiesNames::kNumEntries),
+       &new_table_properties->num_entries},
+      {std::string(TablePropertiesNames::kNumFilterEntries),
        &new_table_properties->num_filter_entries},
-      {TablePropertiesNames::kDeletedKeys,
+      {std::string(TablePropertiesNames::kDeletedKeys),
        &new_table_properties->num_deletions},
-      {TablePropertiesNames::kMergeOperands,
+      {std::string(TablePropertiesNames::kMergeOperands),
        &new_table_properties->num_merge_operands},
-      {TablePropertiesNames::kNumRangeDeletions,
+      {std::string(TablePropertiesNames::kNumRangeDeletions),
        &new_table_properties->num_range_deletions},
-      {TablePropertiesNames::kFormatVersion,
+      {std::string(TablePropertiesNames::kFormatVersion),
        &new_table_properties->format_version},
-      {TablePropertiesNames::kFixedKeyLen,
+      {std::string(TablePropertiesNames::kFixedKeyLen),
        &new_table_properties->fixed_key_len},
-      {TablePropertiesNames::kColumnFamilyId,
+      {std::string(TablePropertiesNames::kColumnFamilyId),
        &new_table_properties->column_family_id},
-      {TablePropertiesNames::kCreationTime,
+      {std::string(TablePropertiesNames::kCreationTime),
        &new_table_properties->creation_time},
-      {TablePropertiesNames::kOldestKeyTime,
+      {std::string(TablePropertiesNames::kOldestKeyTime),
        &new_table_properties->oldest_key_time},
-      {TablePropertiesNames::kFileCreationTime,
+      {std::string(TablePropertiesNames::kFileCreationTime),
        &new_table_properties->file_creation_time},
-      {TablePropertiesNames::kSlowCompressionEstimatedDataSize,
+      {std::string(TablePropertiesNames::kSlowCompressionEstimatedDataSize),
        &new_table_properties->slow_compression_estimated_data_size},
-      {TablePropertiesNames::kFastCompressionEstimatedDataSize,
+      {std::string(TablePropertiesNames::kFastCompressionEstimatedDataSize),
        &new_table_properties->fast_compression_estimated_data_size},
-      {TablePropertiesNames::kTailStartOffset,
+      {std::string(TablePropertiesNames::kTailStartOffset),
        &new_table_properties->tail_start_offset},
-      {TablePropertiesNames::kUserDefinedTimestampsPersisted,
+      {std::string(TablePropertiesNames::kUserDefinedTimestampsPersisted),
        &new_table_properties->user_defined_timestamps_persisted},
   };
 
@@ -349,8 +384,8 @@ Status ReadTablePropertiesHelper(
     }
 
     if (pos != predefined_uint64_properties.end()) {
-      if (key == TablePropertiesNames::kDeletedKeys ||
-          key == TablePropertiesNames::kMergeOperands) {
+      if (key == std::string(TablePropertiesNames::kDeletedKeys) ||
+          key == std::string(TablePropertiesNames::kMergeOperands)) {
         // Insert in user-collected properties for API backwards compatibility
         new_table_properties->user_collected_properties.insert(
             {key, raw_val.ToString()});
@@ -367,29 +402,30 @@ Status ReadTablePropertiesHelper(
         continue;
       }
       *(pos->second) = val;
-    } else if (key == TablePropertiesNames::kDbId) {
+    } else if (key == std::string(TablePropertiesNames::kDbId)) {
       new_table_properties->db_id = raw_val.ToString();
-    } else if (key == TablePropertiesNames::kDbSessionId) {
+    } else if (key == std::string(TablePropertiesNames::kDbSessionId)) {
       new_table_properties->db_session_id = raw_val.ToString();
-    } else if (key == TablePropertiesNames::kDbHostId) {
+    } else if (key == std::string(TablePropertiesNames::kDbHostId)) {
       new_table_properties->db_host_id = raw_val.ToString();
-    } else if (key == TablePropertiesNames::kFilterPolicy) {
+    } else if (key == std::string(TablePropertiesNames::kFilterPolicy)) {
       new_table_properties->filter_policy_name = raw_val.ToString();
-    } else if (key == TablePropertiesNames::kColumnFamilyName) {
+    } else if (key == std::string(TablePropertiesNames::kColumnFamilyName)) {
       new_table_properties->column_family_name = raw_val.ToString();
-    } else if (key == TablePropertiesNames::kComparator) {
+    } else if (key == std::string(TablePropertiesNames::kComparator)) {
       new_table_properties->comparator_name = raw_val.ToString();
-    } else if (key == TablePropertiesNames::kMergeOperator) {
+    } else if (key == std::string(TablePropertiesNames::kMergeOperator)) {
       new_table_properties->merge_operator_name = raw_val.ToString();
-    } else if (key == TablePropertiesNames::kPrefixExtractorName) {
+    } else if (key == std::string(TablePropertiesNames::kPrefixExtractorName)) {
       new_table_properties->prefix_extractor_name = raw_val.ToString();
-    } else if (key == TablePropertiesNames::kPropertyCollectors) {
+    } else if (key == std::string(TablePropertiesNames::kPropertyCollectors)) {
       new_table_properties->property_collectors_names = raw_val.ToString();
-    } else if (key == TablePropertiesNames::kCompression) {
+    } else if (key == std::string(TablePropertiesNames::kCompression)) {
       new_table_properties->compression_name = raw_val.ToString();
-    } else if (key == TablePropertiesNames::kCompressionOptions) {
+    } else if (key == std::string(TablePropertiesNames::kCompressionOptions)) {
       new_table_properties->compression_options = raw_val.ToString();
-    } else if (key == TablePropertiesNames::kSequenceNumberTimeMapping) {
+    } else if (key ==
+               std::string(TablePropertiesNames::kSequenceNumberTimeMapping)) {
       new_table_properties->seqno_to_time_mapping = raw_val.ToString();
     } else {
       // handle user-collected properties
@@ -435,7 +471,7 @@ Status ReadTableProperties(RandomAccessFileReader* file, uint64_t file_size,
   Footer footer;
   Status s =
       FindMetaBlockInFile(file, file_size, table_magic_number, ioptions,
-                          read_options, kPropertiesBlockName, &block_handle,
+                          read_options, GetPropertiesBlockName(), &block_handle,
                           memory_allocator, prefetch_buffer, &footer);
   if (!s.ok()) {
     return s;
@@ -460,11 +496,11 @@ Status FindOptionalMetaBlock(InternalIterator* meta_index_iter,
     if (meta_index_iter->Valid() && meta_index_iter->key() == meta_block_name) {
       Slice v = meta_index_iter->value();
       return block_handle->DecodeFrom(&v);
-    } else if (meta_block_name == kPropertiesBlockName) {
+    } else if (meta_block_name == GetPropertiesBlockName()) {
       // Have to try old name for compatibility
-      meta_index_iter->Seek(kPropertiesBlockOldName);
+      meta_index_iter->Seek(GetPropertiesBlockOldName());
       if (meta_index_iter->status().ok() && meta_index_iter->Valid() &&
-          meta_index_iter->key() == kPropertiesBlockOldName) {
+          meta_index_iter->key() == GetPropertiesBlockOldName()) {
         Slice v = meta_index_iter->value();
         return block_handle->DecodeFrom(&v);
       }

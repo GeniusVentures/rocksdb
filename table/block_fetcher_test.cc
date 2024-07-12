@@ -116,7 +116,7 @@ class BlockFetcherTest : public testing::Test {
     BlockHandle index_handle;
     ASSERT_OK(FindMetaBlockInFile(
         file.get(), file_size, kBlockBasedTableMagicNumber,
-        ImmutableOptions(options_), {}, kIndexBlockName, &index_handle));
+        ImmutableOptions(options_), {}, GetIndexBlockName(), &index_handle));
 
     CompressionType compression_type;
     FetchBlock(file.get(), index_handle, BlockType::kIndex,

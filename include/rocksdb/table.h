@@ -674,11 +674,11 @@ struct BlockBasedTableOptions {
 // Table Properties that are specific to block-based table properties.
 struct BlockBasedTablePropertyNames {
   // value of this properties is a fixed int32 number.
-  static const std::string kIndexType;
+  static constexpr std::string_view kIndexType =    "rocksdb.block.based.table.index.type";
   // value is "1" for true and "0" for false.
-  static const std::string kWholeKeyFiltering;
+  static constexpr std::string_view kWholeKeyFiltering =    "rocksdb.block.based.table.whole.key.filtering";;
   // value is "1" for true and "0" for false.
-  static const std::string kPrefixFiltering;
+  static constexpr std::string_view kPrefixFiltering =    "rocksdb.block.based.table.prefix.filtering";
 };
 
 // Create default block based table factory.

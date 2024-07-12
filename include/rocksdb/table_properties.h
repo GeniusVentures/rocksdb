@@ -36,44 +36,64 @@ using UserCollectedProperties = std::map<std::string, std::string>;
 
 // table properties' human-readable names in the property block.
 struct TablePropertiesNames {
-  static const std::string kDbId;
-  static const std::string kDbSessionId;
-  static const std::string kDbHostId;
-  static const std::string kOriginalFileNumber;
-  static const std::string kDataSize;
-  static const std::string kIndexSize;
-  static const std::string kIndexPartitions;
-  static const std::string kTopLevelIndexSize;
-  static const std::string kIndexKeyIsUserKey;
-  static const std::string kIndexValueIsDeltaEncoded;
-  static const std::string kFilterSize;
-  static const std::string kRawKeySize;
-  static const std::string kRawValueSize;
-  static const std::string kNumDataBlocks;
-  static const std::string kNumEntries;
-  static const std::string kNumFilterEntries;
-  static const std::string kDeletedKeys;
-  static const std::string kMergeOperands;
-  static const std::string kNumRangeDeletions;
-  static const std::string kFormatVersion;
-  static const std::string kFixedKeyLen;
-  static const std::string kFilterPolicy;
-  static const std::string kColumnFamilyName;
-  static const std::string kColumnFamilyId;
-  static const std::string kComparator;
-  static const std::string kMergeOperator;
-  static const std::string kPrefixExtractorName;
-  static const std::string kPropertyCollectors;
-  static const std::string kCompression;
-  static const std::string kCompressionOptions;
-  static const std::string kCreationTime;
-  static const std::string kOldestKeyTime;
-  static const std::string kFileCreationTime;
-  static const std::string kSlowCompressionEstimatedDataSize;
-  static const std::string kFastCompressionEstimatedDataSize;
-  static const std::string kSequenceNumberTimeMapping;
-  static const std::string kTailStartOffset;
-  static const std::string kUserDefinedTimestampsPersisted;
+  static constexpr std::string_view kDbId = "rocksdb.creating.db.identity";
+  static constexpr std::string_view kDbSessionId =
+      "rocksdb.creating.session.identity";
+  static constexpr std::string_view kDbHostId =
+      "rocksdb.creating.host.identity";
+  static constexpr std::string_view kOriginalFileNumber =
+      "rocksdb.original.file.number";
+  static constexpr std::string_view kDataSize = "rocksdb.data.size";
+  static constexpr std::string_view kIndexSize = "rocksdb.index.size";
+  static constexpr std::string_view kIndexPartitions =
+      "rocksdb.index.partitions";
+  static constexpr std::string_view kTopLevelIndexSize =
+      "rocksdb.top-level.index.size";
+  static constexpr std::string_view kIndexKeyIsUserKey =
+      "rocksdb.index.key.is.user.key";
+  static constexpr std::string_view kIndexValueIsDeltaEncoded =
+      "rocksdb.index.value.is.delta.encoded";
+  static constexpr std::string_view kFilterSize = "rocksdb.filter.size";
+  static constexpr std::string_view kRawKeySize = "rocksdb.raw.key.size";
+  static constexpr std::string_view kRawValueSize = "rocksdb.raw.value.size";
+  static constexpr std::string_view kNumDataBlocks = "rocksdb.num.data.blocks";
+  static constexpr std::string_view kNumEntries = "rocksdb.num.entries";
+  static constexpr std::string_view kNumFilterEntries =
+      "rocksdb.num.filter_entries";
+  static constexpr std::string_view kDeletedKeys = "rocksdb.deleted.keys";
+  static constexpr std::string_view kMergeOperands = "rocksdb.merge.operands";
+  static constexpr std::string_view kNumRangeDeletions =
+      "rocksdb.num.range-deletions";
+  static constexpr std::string_view kFilterPolicy = "rocksdb.filter.policy";
+  static constexpr std::string_view kFormatVersion = "rocksdb.format.version";
+  static constexpr std::string_view kFixedKeyLen = "rocksdb.fixed.key.length";
+  static constexpr std::string_view kColumnFamilyId =
+      "rocksdb.column.family.id";
+  static constexpr std::string_view kColumnFamilyName =
+      "rocksdb.column.family.name";
+  static constexpr std::string_view kComparator = "rocksdb.comparator";
+  static constexpr std::string_view kMergeOperator = "rocksdb.merge.operator";
+  static constexpr std::string_view kPrefixExtractorName =
+      "rocksdb.prefix.extractor.name";
+  static constexpr std::string_view kPropertyCollectors =
+      "rocksdb.property.collectors";
+  static constexpr std::string_view kCompression = "rocksdb.compression";
+  static constexpr std::string_view kCompressionOptions =
+      "rocksdb.compression_options";
+  static constexpr std::string_view kCreationTime = "rocksdb.creation.time";
+  static constexpr std::string_view kOldestKeyTime = "rocksdb.oldest.key.time";
+  static constexpr std::string_view kFileCreationTime =
+      "rocksdb.file.creation.time";
+  static constexpr std::string_view kSlowCompressionEstimatedDataSize =
+      "rocksdb.sample_for_compression.slow.data.size";
+  static constexpr std::string_view kFastCompressionEstimatedDataSize =
+      "rocksdb.sample_for_compression.fast.data.size";
+  static constexpr std::string_view kSequenceNumberTimeMapping =
+      "rocksdb.seqno.time.map";
+  static constexpr std::string_view kTailStartOffset =
+      "rocksdb.tail.start.offset";
+  static constexpr std::string_view kUserDefinedTimestampsPersisted =
+      "rocksdb.user.defined.timestamps.persisted";
 };
 
 // `TablePropertiesCollector` provides the mechanism for users to collect

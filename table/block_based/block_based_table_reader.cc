@@ -132,8 +132,7 @@ INSTANTIATE_BLOCKLIKE_TEMPLATES(Block_kMetaIndex);
 namespace ROCKSDB_NAMESPACE {
 
 extern const uint64_t kBlockBasedTableMagicNumber;
-extern const std::string kHashIndexPrefixesBlock;
-extern const std::string kHashIndexPrefixesMetadataBlock;
+
 
 BlockBasedTable::~BlockBasedTable() {
   auto ua = rep_->uncache_aggressiveness.LoadRelaxed();
@@ -467,9 +466,9 @@ bool IsFeatureSupported(const TableProperties& table_properties,
   auto pos = props.find(user_prop_name);
   // Older version doesn't have this value set. Skip this check.
   if (pos != props.end()) {
-    if (pos->second == kPropFalse) {
+    if (pos->second == GetPropTrue()) {
       return false;
-    } else if (pos->second != kPropTrue) {
+    } else if (pos->second != GetPropTrue()) {
       ROCKS_LOG_WARN(info_log, "Property %s has invalidate value %s",
                      user_prop_name.c_str(), pos->second.c_str());
     }
@@ -960,7 +959,7 @@ Status BlockBasedTable::ReadPropertiesBlock(
     InternalIterator* meta_iter, const SequenceNumber largest_seqno) {
   Status s;
   BlockHandle handle;
-  s = FindOptionalMetaBlock(meta_iter, kPropertiesBlockName, &handle);
+  s = FindOptionalMetaBlock(meta_iter, GetPropertiesBlockName(), &handle);
 
   if (!s.ok()) {
     ROCKS_LOG_WARN(rep_->ioptions.logger,
@@ -1008,11 +1007,11 @@ Status BlockBasedTable::ReadPropertiesBlock(
   if (rep_->table_properties) {
     rep_->whole_key_filtering &=
         IsFeatureSupported(*(rep_->table_properties),
-                           BlockBasedTablePropertyNames::kWholeKeyFiltering,
+                           std::string(BlockBasedTablePropertyNames::kWholeKeyFiltering),
                            rep_->ioptions.logger);
     rep_->prefix_filtering &= IsFeatureSupported(
         *(rep_->table_properties),
-        BlockBasedTablePropertyNames::kPrefixFiltering, rep_->ioptions.logger);
+        std::string(BlockBasedTablePropertyNames::kPrefixFiltering), rep_->ioptions.logger);
 
     rep_->index_key_includes_seq =
         rep_->table_properties->index_key_is_user_key == 0;
@@ -1023,7 +1022,7 @@ Status BlockBasedTable::ReadPropertiesBlock(
     // If table properties don't contain index type, we assume that the table
     // is in very old format and has kBinarySearch index type.
     auto& props = rep_->table_properties->user_collected_properties;
-    auto index_type_pos = props.find(BlockBasedTablePropertyNames::kIndexType);
+    auto index_type_pos = props.find(std::string(BlockBasedTablePropertyNames::kIndexType));
     if (index_type_pos != props.end()) {
       rep_->index_type = static_cast<BlockBasedTableOptions::IndexType>(
           DecodeFixed32(index_type_pos->second.c_str()));
@@ -1056,7 +1055,7 @@ Status BlockBasedTable::ReadRangeDelBlock(
     BlockCacheLookupContext* lookup_context) {
   Status s;
   BlockHandle range_del_handle;
-  s = FindOptionalMetaBlock(meta_iter, kRangeDelBlockName, &range_del_handle);
+  s = FindOptionalMetaBlock(meta_iter, GetRangeDelBlockName(), &range_del_handle);
   if (!s.ok()) {
     ROCKS_LOG_WARN(
         rep_->ioptions.logger,
@@ -1176,7 +1175,7 @@ Status BlockBasedTable::PrefetchIndexAndFilterBlocks(
          rep_->index_type == BlockBasedTableOptions::kTwoLevelIndexSearch);
 
   // Find compression dictionary handle
-  Status s = FindOptionalMetaBlock(meta_iter, kCompressionDictBlockName,
+  Status s = FindOptionalMetaBlock(meta_iter, GetCompressionDictBlockName(),
                                    &rep_->compression_dict_handle);
   if (!s.ok()) {
     return s;
@@ -2625,27 +2624,27 @@ BlockType BlockBasedTable::GetBlockTypeForMetaBlockByName(
     return BlockType::kFilterPartitionIndex;
   }
 
-  if (meta_block_name == kPropertiesBlockName) {
+  if (meta_block_name == GetPropertiesBlockName()) {
     return BlockType::kProperties;
   }
 
-  if (meta_block_name == kCompressionDictBlockName) {
+  if (meta_block_name == GetCompressionDictBlockName()) {
     return BlockType::kCompressionDictionary;
   }
 
-  if (meta_block_name == kRangeDelBlockName) {
+  if (meta_block_name == GetRangeDelBlockName()) {
     return BlockType::kRangeDeletion;
   }
 
-  if (meta_block_name == kHashIndexPrefixesBlock) {
+  if (meta_block_name == GetHashIndexPrefixesBlock()) {
     return BlockType::kHashIndexPrefixes;
   }
 
-  if (meta_block_name == kHashIndexPrefixesMetadataBlock) {
+  if (meta_block_name == GetHashIndexPrefixesMetadataBlock()) {
     return BlockType::kHashIndexMetadata;
   }
 
-  if (meta_block_name == kIndexBlockName) {
+  if (meta_block_name == GetIndexBlockName()) {
     return BlockType::kIndex;
   }
 
@@ -2674,7 +2673,7 @@ Status BlockBasedTable::VerifyChecksumInMetaBlocks(
     }
     BlockContents contents;
     const Slice meta_block_name = index_iter->key();
-    if (meta_block_name == kPropertiesBlockName) {
+    if (meta_block_name == GetPropertiesBlockName()) {
       // Unfortunate special handling for properties block checksum w/
       // global seqno
       std::unique_ptr<TableProperties> table_properties;
@@ -2683,7 +2682,7 @@ Status BlockBasedTable::VerifyChecksumInMetaBlocks(
                                     rep_->ioptions, &table_properties,
                                     nullptr /* memory_allocator */);
     } else if (rep_->verify_checksum_set_on_open &&
-               meta_block_name == kIndexBlockName) {
+               meta_block_name == GetIndexBlockName()) {
       // WART: For now, to maintain similar I/O behavior as before
       // format_version=6, we skip verifying index block checksum--but only
       // if it was checked on open.
@@ -2779,7 +2778,7 @@ Status BlockBasedTable::CreateIndexReader(
   if (FormatVersionUsesIndexHandleInFooter(rep_->footer.format_version())) {
     rep_->index_handle = rep_->footer.index_handle();
   } else {
-    Status s = FindMetaBlock(meta_iter, kIndexBlockName, &rep_->index_handle);
+    Status s = FindMetaBlock(meta_iter, GetIndexBlockName(), &rep_->index_handle);
     if (!s.ok()) {
       return s;
     }
@@ -3030,17 +3029,17 @@ Status BlockBasedTable::DumpTable(WritableFile* out_file) {
       if (!s.ok()) {
         return s;
       }
-      if (metaindex_iter->key() == kPropertiesBlockName) {
+      if (metaindex_iter->key() == GetPropertiesBlockName()) {
         out_stream << "  Properties block handle: "
                    << metaindex_iter->value().ToString(true) << "\n";
-      } else if (metaindex_iter->key() == kCompressionDictBlockName) {
+      } else if (metaindex_iter->key() == GetCompressionDictBlockName()) {
         out_stream << "  Compression dictionary block handle: "
                    << metaindex_iter->value().ToString(true) << "\n";
       } else if (strstr(metaindex_iter->key().ToString().c_str(),
                         "filter.rocksdb.") != nullptr) {
         out_stream << "  Filter block handle: "
                    << metaindex_iter->value().ToString(true) << "\n";
-      } else if (metaindex_iter->key() == kRangeDelBlockName) {
+      } else if (metaindex_iter->key() == GetRangeDelBlockName()) {
         out_stream << "  Range deletion block handle: "
                    << metaindex_iter->value().ToString(true) << "\n";
       }

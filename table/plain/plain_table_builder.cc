@@ -288,7 +288,7 @@ Status PlainTableBuilder::Finish() {
     status_ = io_status_;
     return status_;
   }
-  meta_index_builer.Add(kPropertiesBlockName, property_block_handle);
+  meta_index_builer.Add(GetPropertiesBlockName(), property_block_handle);
 
   // -- write metaindex block
   BlockHandle metaindex_block_handle;

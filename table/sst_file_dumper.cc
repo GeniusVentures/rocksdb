@@ -404,7 +404,7 @@ Status SstFileDumper::SetTableOptionsByMagicNumber(
     }
 
     auto& props = table_properties_->user_collected_properties;
-    auto pos = props.find(BlockBasedTablePropertyNames::kIndexType);
+    auto pos = props.find(std::string(BlockBasedTablePropertyNames::kIndexType));
     if (pos != props.end()) {
       auto index_type_on_file = static_cast<BlockBasedTableOptions::IndexType>(
           DecodeFixed32(pos->second.c_str()));

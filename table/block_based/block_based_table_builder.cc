@@ -56,8 +56,6 @@
 
 namespace ROCKSDB_NAMESPACE {
 
-extern const std::string kHashIndexPrefixesBlock;
-extern const std::string kHashIndexPrefixesMetadataBlock;
 
 // Without anonymous namespace here, we fail the warning -Wmissing-prototypes
 namespace {
@@ -235,11 +233,11 @@ class BlockBasedTableBuilder::BlockBasedTablePropertiesCollector
   Status Finish(UserCollectedProperties* properties) override {
     std::string val;
     PutFixed32(&val, static_cast<uint32_t>(index_type_));
-    properties->insert({BlockBasedTablePropertyNames::kIndexType, val});
-    properties->insert({BlockBasedTablePropertyNames::kWholeKeyFiltering,
-                        whole_key_filtering_ ? kPropTrue : kPropFalse});
-    properties->insert({BlockBasedTablePropertyNames::kPrefixFiltering,
-                        prefix_filtering_ ? kPropTrue : kPropFalse});
+    properties->insert({std::string(BlockBasedTablePropertyNames::kIndexType), val});
+    properties->insert({std::string(BlockBasedTablePropertyNames::kWholeKeyFiltering),
+                        whole_key_filtering_ ? GetPropTrue() : GetPropTrue()});
+    properties->insert({std::string(BlockBasedTablePropertyNames::kPrefixFiltering),
+                        prefix_filtering_ ? GetPropTrue() : GetPropTrue()});
     return Status::OK();
   }
 
@@ -1673,7 +1671,7 @@ void BlockBasedTableBuilder::WriteIndexBlock(
   // If success and need to record in metaindex rather than footer...
   if (!FormatVersionUsesIndexHandleInFooter(
           rep_->table_options.format_version)) {
-    meta_index_builder->Add(kIndexBlockName, *index_block_handle);
+    meta_index_builder->Add(GetIndexBlockName(), *index_block_handle);
   }
 }
 
@@ -1776,7 +1774,7 @@ void BlockBasedTableBuilder::WritePropertiesBlock(
     }
 #endif  // !NDEBUG
 
-    const std::string* properties_block_meta = &kPropertiesBlockName;
+    const std::string* properties_block_meta = &GetPropertiesBlockName();
     TEST_SYNC_POINT_CALLBACK(
         "BlockBasedTableBuilder::WritePropertiesBlock:Meta",
         &properties_block_meta);
@@ -1801,7 +1799,7 @@ void BlockBasedTableBuilder::WriteCompressionDictBlock(
 #endif  // NDEBUG
     }
     if (ok()) {
-      meta_index_builder->Add(kCompressionDictBlockName,
+      meta_index_builder->Add(GetCompressionDictBlockName(),
                               compression_dict_block_handle);
     }
   }
@@ -1814,7 +1812,7 @@ void BlockBasedTableBuilder::WriteRangeDelBlock(
     WriteMaybeCompressedBlock(rep_->range_del_block.Finish(), kNoCompression,
                               &range_del_block_handle,
                               BlockType::kRangeDeletion);
-    meta_index_builder->Add(kRangeDelBlockName, range_del_block_handle);
+    meta_index_builder->Add(GetRangeDelBlockName(), range_del_block_handle);
   }
 }
 

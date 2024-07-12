@@ -5687,7 +5687,7 @@ TEST_P(BlockBasedTableTest, PropertiesBlockRestartPointTest) {
 
     // -- Read properties block
     BlockHandle properties_handle;
-    ASSERT_OK(FindOptionalMetaBlock(meta_iter.get(), kPropertiesBlockName,
+    ASSERT_OK(FindOptionalMetaBlock(meta_iter.get(), GetPropertiesBlockName(),
                                     &properties_handle));
     ASSERT_FALSE(properties_handle.IsNull());
     BlockContents properties_contents;
@@ -5826,7 +5826,7 @@ TEST_P(BlockBasedTableTest, PropertiesMetaBlockLast) {
       key_at_max_offset = metaindex_iter->key().ToString();
     }
   }
-  ASSERT_EQ(kPropertiesBlockName, key_at_max_offset);
+  ASSERT_EQ(GetPropertiesBlockName(), key_at_max_offset);
   if (FormatVersionUsesIndexHandleInFooter(footer.format_version())) {
     // If index handle is stored in footer rather than metaindex block,
     // need separate logic to verify it comes before properties block.
@@ -5900,23 +5900,23 @@ TEST_P(BlockBasedTableTest, SeekMetaBlocks) {
   bool has_hash_metadata = false;
   for (metaindex_iter->SeekToFirst(); metaindex_iter->Valid();
        metaindex_iter->Next()) {
-    if (metaindex_iter->key().ToString() == kHashIndexPrefixesBlock) {
+    if (metaindex_iter->key().ToString() == GetHashIndexPrefixesBlock()) {
       has_hash_prefixes = true;
     } else if (metaindex_iter->key().ToString() ==
-               kHashIndexPrefixesMetadataBlock) {
+               GetHashIndexPrefixesMetadataBlock()) {
       has_hash_metadata = true;
     }
   }
   if (has_hash_metadata) {
-    metaindex_iter->Seek(kHashIndexPrefixesMetadataBlock);
+    metaindex_iter->Seek(GetHashIndexPrefixesMetadataBlock());
     ASSERT_TRUE(metaindex_iter->Valid());
-    ASSERT_EQ(kHashIndexPrefixesMetadataBlock,
+    ASSERT_EQ(GetHashIndexPrefixesMetadataBlock(),
               metaindex_iter->key().ToString());
   }
   if (has_hash_prefixes) {
-    metaindex_iter->Seek(kHashIndexPrefixesBlock);
+    metaindex_iter->Seek(GetHashIndexPrefixesBlock());
     ASSERT_TRUE(metaindex_iter->Valid());
-    ASSERT_EQ(kHashIndexPrefixesBlock, metaindex_iter->key().ToString());
+    ASSERT_EQ(GetHashIndexPrefixesBlock(), metaindex_iter->key().ToString());
   }
   c.ResetTableReader();
 }

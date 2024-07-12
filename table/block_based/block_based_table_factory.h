@@ -95,8 +95,9 @@ class BlockBasedTableFactory : public TableFactory {
   mutable TailPrefetchStats tail_prefetch_stats_;
 };
 
-extern const std::string kHashIndexPrefixesBlock;
-extern const std::string kHashIndexPrefixesMetadataBlock;
-extern const std::string kPropTrue;
-extern const std::string kPropFalse;
+const std::string &GetHashIndexPrefixesBlock();
+const std::string &GetHashIndexPrefixesMetadataBlock();
+const std::string &GetPropTrue();
+const std::string &GetPropFalse();
+
 }  // namespace ROCKSDB_NAMESPACE

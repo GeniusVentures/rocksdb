@@ -49,7 +49,7 @@ Status HashIndexReader::Create(const BlockBasedTable* table,
   // Get prefixes block
   BlockHandle prefixes_handle;
   Status s =
-      FindMetaBlock(meta_index_iter, kHashIndexPrefixesBlock, &prefixes_handle);
+      FindMetaBlock(meta_index_iter, GetHashIndexPrefixesBlock(), &prefixes_handle);
   if (!s.ok()) {
     // TODO: log error
     return Status::OK();
@@ -57,7 +57,7 @@ Status HashIndexReader::Create(const BlockBasedTable* table,
 
   // Get index metadata block
   BlockHandle prefixes_meta_handle;
-  s = FindMetaBlock(meta_index_iter, kHashIndexPrefixesMetadataBlock,
+  s = FindMetaBlock(meta_index_iter, GetHashIndexPrefixesMetadataBlock(),
                     &prefixes_meta_handle);
   if (!s.ok()) {
     // TODO: log error

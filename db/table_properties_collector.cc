@@ -61,13 +61,13 @@ UserCollectedProperties UserKeyTablePropertiesCollector::GetReadableProperties()
 
 uint64_t GetDeletedKeys(const UserCollectedProperties& props) {
   bool property_present_ignored;
-  return GetUint64Property(props, TablePropertiesNames::kDeletedKeys,
+  return GetUint64Property(props, std::string(TablePropertiesNames::kDeletedKeys),
                            &property_present_ignored);
 }
 
 uint64_t GetMergeOperands(const UserCollectedProperties& props,
                           bool* property_present) {
-  return GetUint64Property(props, TablePropertiesNames::kMergeOperands,
+  return GetUint64Property(props, std::string(TablePropertiesNames::kMergeOperands),
                            property_present);
 }
 

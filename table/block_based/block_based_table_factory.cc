@@ -964,16 +964,22 @@ TableFactory* NewBlockBasedTableFactory(
   return new BlockBasedTableFactory(_table_options);
 }
 
-const std::string BlockBasedTablePropertyNames::kIndexType =
-    "rocksdb.block.based.table.index.type";
-const std::string BlockBasedTablePropertyNames::kWholeKeyFiltering =
-    "rocksdb.block.based.table.whole.key.filtering";
-const std::string BlockBasedTablePropertyNames::kPrefixFiltering =
-    "rocksdb.block.based.table.prefix.filtering";
-const std::string kHashIndexPrefixesBlock = "rocksdb.hashindex.prefixes";
-const std::string kHashIndexPrefixesMetadataBlock =
-    "rocksdb.hashindex.metadata";
-const std::string kPropTrue = "1";
-const std::string kPropFalse = "0";
+const std::string& GetHashIndexPrefixesBlock() {
+  const std::string kHashIndexPrefixesBlock = "rocksdb.hashindex.prefixes";
+  return kHashIndexPrefixesBlock;
+}
+const std::string& GetHashIndexPrefixesMetadataBlock() {
+  const std::string kHashIndexPrefixesMetadataBlock =
+      "rocksdb.hashindex.metadata";
+  return kHashIndexPrefixesMetadataBlock;
+}
+const std::string& GetPropTrue() {
+  const std::string kPropTrue = "1";
+  return kPropTrue;
+}
+const std::string& GetPropFalse() {
+  const std::string kPropFalse = "0";
+  return kPropFalse;
+}
 
 }  // namespace ROCKSDB_NAMESPACE

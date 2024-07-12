@@ -768,7 +768,7 @@ TEST_F(CorruptionTest, RangeDeletionCorrupted) {
   ASSERT_OK(FindMetaBlockInFile(file_reader.get(), file_size,
                                 kBlockBasedTableMagicNumber,
                                 ImmutableOptions(options_), read_options,
-                                kRangeDelBlockName, &range_del_handle));
+                                GetRangeDelBlockName(), &range_del_handle));
 
   ASSERT_OK(TryReopen());
   ASSERT_OK(test::CorruptFile(env_.get(), filename,
