@@ -17,54 +17,60 @@
 
 namespace ROCKSDB_NAMESPACE {
 const Cache::CacheItemHelper kNoopCacheItemHelper{};
-
-static std::unordered_map<std::string, OptionTypeInfo>
-    lru_cache_options_type_info = {
-        {"capacity",
-         {offsetof(struct LRUCacheOptions, capacity), OptionType::kSizeT,
-          OptionVerificationType::kNormal, OptionTypeFlags::kMutable}},
-        {"num_shard_bits",
-         {offsetof(struct LRUCacheOptions, num_shard_bits), OptionType::kInt,
-          OptionVerificationType::kNormal, OptionTypeFlags::kMutable}},
-        {"strict_capacity_limit",
-         {offsetof(struct LRUCacheOptions, strict_capacity_limit),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
-        {"high_pri_pool_ratio",
-         {offsetof(struct LRUCacheOptions, high_pri_pool_ratio),
-          OptionType::kDouble, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
-        {"low_pri_pool_ratio",
-         {offsetof(struct LRUCacheOptions, low_pri_pool_ratio),
-          OptionType::kDouble, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
-};
-
-static std::unordered_map<std::string, OptionTypeInfo>
-    comp_sec_cache_options_type_info = {
-        {"capacity",
-         {offsetof(struct CompressedSecondaryCacheOptions, capacity),
-          OptionType::kSizeT, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
-        {"num_shard_bits",
-         {offsetof(struct CompressedSecondaryCacheOptions, num_shard_bits),
-          OptionType::kInt, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
-        {"compression_type",
-         {offsetof(struct CompressedSecondaryCacheOptions, compression_type),
-          OptionType::kCompressionType, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
-        {"compress_format_version",
-         {offsetof(struct CompressedSecondaryCacheOptions,
-                   compress_format_version),
-          OptionType::kUInt32T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
-        {"enable_custom_split_merge",
-         {offsetof(struct CompressedSecondaryCacheOptions,
-                   enable_custom_split_merge),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetLRUCacheOptionsTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      lru_cache_options_type_info = {
+          {"capacity",
+           {offsetof(struct LRUCacheOptions, capacity), OptionType::kSizeT,
+            OptionVerificationType::kNormal, OptionTypeFlags::kMutable}},
+          {"num_shard_bits",
+           {offsetof(struct LRUCacheOptions, num_shard_bits), OptionType::kInt,
+            OptionVerificationType::kNormal, OptionTypeFlags::kMutable}},
+          {"strict_capacity_limit",
+           {offsetof(struct LRUCacheOptions, strict_capacity_limit),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+          {"high_pri_pool_ratio",
+           {offsetof(struct LRUCacheOptions, high_pri_pool_ratio),
+            OptionType::kDouble, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+          {"low_pri_pool_ratio",
+           {offsetof(struct LRUCacheOptions, low_pri_pool_ratio),
+            OptionType::kDouble, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+      };
+  return lru_cache_options_type_info;
+}
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetCompSecCacheOptionsTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      comp_sec_cache_options_type_info = {
+          {"capacity",
+           {offsetof(struct CompressedSecondaryCacheOptions, capacity),
+            OptionType::kSizeT, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+          {"num_shard_bits",
+           {offsetof(struct CompressedSecondaryCacheOptions, num_shard_bits),
+            OptionType::kInt, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+          {"compression_type",
+           {offsetof(struct CompressedSecondaryCacheOptions, compression_type),
+            OptionType::kCompressionType, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+          {"compress_format_version",
+           {offsetof(struct CompressedSecondaryCacheOptions,
+                     compress_format_version),
+            OptionType::kUInt32T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+          {"enable_custom_split_merge",
+           {offsetof(struct CompressedSecondaryCacheOptions,
+                     enable_custom_split_merge),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+      };
+  return comp_sec_cache_options_type_info;
+}
 
 namespace {
 static void NoopDelete(Cache::ObjectPtr /*obj*/,
@@ -112,12 +118,11 @@ Status SecondaryCache::CreateFromString(
 
     CompressedSecondaryCacheOptions sec_cache_opts;
     status = OptionTypeInfo::ParseStruct(config_options, "",
-                                         &comp_sec_cache_options_type_info, "",
+                                         &GetCompSecCacheOptionsTypeInfo(), "",
                                          args, &sec_cache_opts);
     if (status.ok()) {
       sec_cache = NewCompressedSecondaryCache(sec_cache_opts);
     }
-
 
     if (status.ok()) {
       result->swap(sec_cache);
@@ -138,7 +143,7 @@ Status Cache::CreateFromString(const ConfigOptions& config_options,
   } else {
     LRUCacheOptions cache_opts;
     status = OptionTypeInfo::ParseStruct(config_options, "",
-                                         &lru_cache_options_type_info, "",
+                                         &GetLRUCacheOptionsTypeInfo(), "",
                                          value, &cache_opts);
     if (status.ok()) {
       cache = NewLRUCache(cache_opts);

@@ -356,278 +356,298 @@ enum BinaryFormatVersion : uint32_t {
   kOptionsString = 1,  // Use string format similar to Option string format
 };
 
-static std::unordered_map<std::string, OptionTypeInfo> cfd_type_info = {
-    {"name",
-     {offsetof(struct ColumnFamilyDescriptor, name), OptionType::kEncodedString,
-      OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
-    {"options",
-     {offsetof(struct ColumnFamilyDescriptor, options),
-      OptionType::kConfigurable, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone,
-      [](const ConfigOptions& opts, const std::string& /*name*/,
-         const std::string& value, void* addr) {
-        auto cf_options = static_cast<ColumnFamilyOptions*>(addr);
-        return GetColumnFamilyOptionsFromString(opts, ColumnFamilyOptions(),
-                                                value, cf_options);
-      },
-      [](const ConfigOptions& opts, const std::string& /*name*/,
-         const void* addr, std::string* value) {
-        const auto cf_options = static_cast<const ColumnFamilyOptions*>(addr);
-        std::string result;
-        auto status =
-            GetStringFromColumnFamilyOptions(opts, *cf_options, &result);
-        *value = "{" + result + "}";
-        return status;
-      },
-      [](const ConfigOptions& opts, const std::string& name, const void* addr1,
-         const void* addr2, std::string* mismatch) {
-        const auto this_one = static_cast<const ColumnFamilyOptions*>(addr1);
-        const auto that_one = static_cast<const ColumnFamilyOptions*>(addr2);
-        auto this_conf = CFOptionsAsConfigurable(*this_one);
-        auto that_conf = CFOptionsAsConfigurable(*that_one);
-        std::string mismatch_opt;
-        bool result =
-            this_conf->AreEquivalent(opts, that_conf.get(), &mismatch_opt);
-        if (!result) {
-          *mismatch = name + "." + mismatch_opt;
-        }
-        return result;
-      }}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>& GetCFDTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> cfd_type_info = {
+      {"name",
+       {offsetof(struct ColumnFamilyDescriptor, name),
+        OptionType::kEncodedString, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"options",
+       {offsetof(struct ColumnFamilyDescriptor, options),
+        OptionType::kConfigurable, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone,
+        [](const ConfigOptions& opts, const std::string& /*name*/,
+           const std::string& value, void* addr) {
+          auto cf_options = static_cast<ColumnFamilyOptions*>(addr);
+          return GetColumnFamilyOptionsFromString(opts, ColumnFamilyOptions(),
+                                                  value, cf_options);
+        },
+        [](const ConfigOptions& opts, const std::string& /*name*/,
+           const void* addr, std::string* value) {
+          const auto cf_options = static_cast<const ColumnFamilyOptions*>(addr);
+          std::string result;
+          auto status =
+              GetStringFromColumnFamilyOptions(opts, *cf_options, &result);
+          *value = "{" + result + "}";
+          return status;
+        },
+        [](const ConfigOptions& opts, const std::string& name,
+           const void* addr1, const void* addr2, std::string* mismatch) {
+          const auto this_one = static_cast<const ColumnFamilyOptions*>(addr1);
+          const auto that_one = static_cast<const ColumnFamilyOptions*>(addr2);
+          auto this_conf = CFOptionsAsConfigurable(*this_one);
+          auto that_conf = CFOptionsAsConfigurable(*that_one);
+          std::string mismatch_opt;
+          bool result =
+              this_conf->AreEquivalent(opts, that_conf.get(), &mismatch_opt);
+          if (!result) {
+            *mismatch = name + "." + mismatch_opt;
+          }
+          return result;
+        }}},
+  };
+  return cfd_type_info;
+}
 
-static std::unordered_map<std::string, OptionTypeInfo> cs_input_type_info = {
-    {"column_family",
-     OptionTypeInfo::Struct(
-         "column_family", &cfd_type_info,
-         offsetof(struct CompactionServiceInput, column_family),
-         OptionVerificationType::kNormal, OptionTypeFlags::kNone)},
-    {"db_options",
-     {offsetof(struct CompactionServiceInput, db_options),
-      OptionType::kConfigurable, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone,
-      [](const ConfigOptions& opts, const std::string& /*name*/,
-         const std::string& value, void* addr) {
-        auto options = static_cast<DBOptions*>(addr);
-        return GetDBOptionsFromString(opts, DBOptions(), value, options);
-      },
-      [](const ConfigOptions& opts, const std::string& /*name*/,
-         const void* addr, std::string* value) {
-        const auto options = static_cast<const DBOptions*>(addr);
-        std::string result;
-        auto status = GetStringFromDBOptions(opts, *options, &result);
-        *value = "{" + result + "}";
-        return status;
-      },
-      [](const ConfigOptions& opts, const std::string& name, const void* addr1,
-         const void* addr2, std::string* mismatch) {
-        const auto this_one = static_cast<const DBOptions*>(addr1);
-        const auto that_one = static_cast<const DBOptions*>(addr2);
-        auto this_conf = DBOptionsAsConfigurable(*this_one);
-        auto that_conf = DBOptionsAsConfigurable(*that_one);
-        std::string mismatch_opt;
-        bool result =
-            this_conf->AreEquivalent(opts, that_conf.get(), &mismatch_opt);
-        if (!result) {
-          *mismatch = name + "." + mismatch_opt;
-        }
-        return result;
-      }}},
-    {"snapshots", OptionTypeInfo::Vector<uint64_t>(
-                      offsetof(struct CompactionServiceInput, snapshots),
-                      OptionVerificationType::kNormal, OptionTypeFlags::kNone,
-                      {0, OptionType::kUInt64T})},
-    {"input_files", OptionTypeInfo::Vector<std::string>(
-                        offsetof(struct CompactionServiceInput, input_files),
+static std::unordered_map<std::string, OptionTypeInfo>& GetCSInputTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> cs_input_type_info = {
+      {"column_family",
+       OptionTypeInfo::Struct(
+           "column_family", &GetCFDTypeInfo(),
+           offsetof(struct CompactionServiceInput, column_family),
+           OptionVerificationType::kNormal, OptionTypeFlags::kNone)},
+      {"db_options",
+       {offsetof(struct CompactionServiceInput, db_options),
+        OptionType::kConfigurable, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone,
+        [](const ConfigOptions& opts, const std::string& /*name*/,
+           const std::string& value, void* addr) {
+          auto options = static_cast<DBOptions*>(addr);
+          return GetDBOptionsFromString(opts, DBOptions(), value, options);
+        },
+        [](const ConfigOptions& opts, const std::string& /*name*/,
+           const void* addr, std::string* value) {
+          const auto options = static_cast<const DBOptions*>(addr);
+          std::string result;
+          auto status = GetStringFromDBOptions(opts, *options, &result);
+          *value = "{" + result + "}";
+          return status;
+        },
+        [](const ConfigOptions& opts, const std::string& name,
+           const void* addr1, const void* addr2, std::string* mismatch) {
+          const auto this_one = static_cast<const DBOptions*>(addr1);
+          const auto that_one = static_cast<const DBOptions*>(addr2);
+          auto this_conf = DBOptionsAsConfigurable(*this_one);
+          auto that_conf = DBOptionsAsConfigurable(*that_one);
+          std::string mismatch_opt;
+          bool result =
+              this_conf->AreEquivalent(opts, that_conf.get(), &mismatch_opt);
+          if (!result) {
+            *mismatch = name + "." + mismatch_opt;
+          }
+          return result;
+        }}},
+      {"snapshots", OptionTypeInfo::Vector<uint64_t>(
+                        offsetof(struct CompactionServiceInput, snapshots),
                         OptionVerificationType::kNormal, OptionTypeFlags::kNone,
-                        {0, OptionType::kEncodedString})},
-    {"output_level",
-     {offsetof(struct CompactionServiceInput, output_level), OptionType::kInt,
-      OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
-    {"db_id",
-     {offsetof(struct CompactionServiceInput, db_id),
-      OptionType::kEncodedString}},
-    {"has_begin",
-     {offsetof(struct CompactionServiceInput, has_begin), OptionType::kBoolean,
-      OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
-    {"begin",
-     {offsetof(struct CompactionServiceInput, begin),
-      OptionType::kEncodedString, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-    {"has_end",
-     {offsetof(struct CompactionServiceInput, has_end), OptionType::kBoolean,
-      OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
-    {"end",
-     {offsetof(struct CompactionServiceInput, end), OptionType::kEncodedString,
-      OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
-};
+                        {0, OptionType::kUInt64T})},
+      {"input_files",
+       OptionTypeInfo::Vector<std::string>(
+           offsetof(struct CompactionServiceInput, input_files),
+           OptionVerificationType::kNormal, OptionTypeFlags::kNone,
+           {0, OptionType::kEncodedString})},
+      {"output_level",
+       {offsetof(struct CompactionServiceInput, output_level), OptionType::kInt,
+        OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
+      {"db_id",
+       {offsetof(struct CompactionServiceInput, db_id),
+        OptionType::kEncodedString}},
+      {"has_begin",
+       {offsetof(struct CompactionServiceInput, has_begin),
+        OptionType::kBoolean, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"begin",
+       {offsetof(struct CompactionServiceInput, begin),
+        OptionType::kEncodedString, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"has_end",
+       {offsetof(struct CompactionServiceInput, has_end), OptionType::kBoolean,
+        OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
+      {"end",
+       {offsetof(struct CompactionServiceInput, end),
+        OptionType::kEncodedString, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+  };
+  return cs_input_type_info;
+}
 
-static std::unordered_map<std::string, OptionTypeInfo>
-    cs_output_file_type_info = {
-        {"file_name",
-         {offsetof(struct CompactionServiceOutputFile, file_name),
-          OptionType::kEncodedString, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"smallest_seqno",
-         {offsetof(struct CompactionServiceOutputFile, smallest_seqno),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"largest_seqno",
-         {offsetof(struct CompactionServiceOutputFile, largest_seqno),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"smallest_internal_key",
-         {offsetof(struct CompactionServiceOutputFile, smallest_internal_key),
-          OptionType::kEncodedString, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"largest_internal_key",
-         {offsetof(struct CompactionServiceOutputFile, largest_internal_key),
-          OptionType::kEncodedString, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"oldest_ancester_time",
-         {offsetof(struct CompactionServiceOutputFile, oldest_ancester_time),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"file_creation_time",
-         {offsetof(struct CompactionServiceOutputFile, file_creation_time),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"epoch_number",
-         {offsetof(struct CompactionServiceOutputFile, epoch_number),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"paranoid_hash",
-         {offsetof(struct CompactionServiceOutputFile, paranoid_hash),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"marked_for_compaction",
-         {offsetof(struct CompactionServiceOutputFile, marked_for_compaction),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"unique_id",
-         OptionTypeInfo::Array<uint64_t, 2>(
-             offsetof(struct CompactionServiceOutputFile, unique_id),
-             OptionVerificationType::kNormal, OptionTypeFlags::kNone,
-             {0, OptionType::kUInt64T})},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetCSOutputFileTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      cs_output_file_type_info = {
+          {"file_name",
+           {offsetof(struct CompactionServiceOutputFile, file_name),
+            OptionType::kEncodedString, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"smallest_seqno",
+           {offsetof(struct CompactionServiceOutputFile, smallest_seqno),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"largest_seqno",
+           {offsetof(struct CompactionServiceOutputFile, largest_seqno),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"smallest_internal_key",
+           {offsetof(struct CompactionServiceOutputFile, smallest_internal_key),
+            OptionType::kEncodedString, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"largest_internal_key",
+           {offsetof(struct CompactionServiceOutputFile, largest_internal_key),
+            OptionType::kEncodedString, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"oldest_ancester_time",
+           {offsetof(struct CompactionServiceOutputFile, oldest_ancester_time),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"file_creation_time",
+           {offsetof(struct CompactionServiceOutputFile, file_creation_time),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"epoch_number",
+           {offsetof(struct CompactionServiceOutputFile, epoch_number),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"paranoid_hash",
+           {offsetof(struct CompactionServiceOutputFile, paranoid_hash),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"marked_for_compaction",
+           {offsetof(struct CompactionServiceOutputFile, marked_for_compaction),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"unique_id",
+           OptionTypeInfo::Array<uint64_t, 2>(
+               offsetof(struct CompactionServiceOutputFile, unique_id),
+               OptionVerificationType::kNormal, OptionTypeFlags::kNone,
+               {0, OptionType::kUInt64T})},
+      };
+  return cs_output_file_type_info;
+}
 
-static std::unordered_map<std::string, OptionTypeInfo>
-    compaction_job_stats_type_info = {
-        {"elapsed_micros",
-         {offsetof(struct CompactionJobStats, elapsed_micros),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"cpu_micros",
-         {offsetof(struct CompactionJobStats, cpu_micros), OptionType::kUInt64T,
-          OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
-        {"num_input_records",
-         {offsetof(struct CompactionJobStats, num_input_records),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"num_blobs_read",
-         {offsetof(struct CompactionJobStats, num_blobs_read),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"num_input_files",
-         {offsetof(struct CompactionJobStats, num_input_files),
-          OptionType::kSizeT, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"num_input_files_at_output_level",
-         {offsetof(struct CompactionJobStats, num_input_files_at_output_level),
-          OptionType::kSizeT, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"num_output_records",
-         {offsetof(struct CompactionJobStats, num_output_records),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"num_output_files",
-         {offsetof(struct CompactionJobStats, num_output_files),
-          OptionType::kSizeT, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"num_output_files_blob",
-         {offsetof(struct CompactionJobStats, num_output_files_blob),
-          OptionType::kSizeT, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"is_full_compaction",
-         {offsetof(struct CompactionJobStats, is_full_compaction),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"is_manual_compaction",
-         {offsetof(struct CompactionJobStats, is_manual_compaction),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"total_input_bytes",
-         {offsetof(struct CompactionJobStats, total_input_bytes),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"total_blob_bytes_read",
-         {offsetof(struct CompactionJobStats, total_blob_bytes_read),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"total_output_bytes",
-         {offsetof(struct CompactionJobStats, total_output_bytes),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"total_output_bytes_blob",
-         {offsetof(struct CompactionJobStats, total_output_bytes_blob),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"num_records_replaced",
-         {offsetof(struct CompactionJobStats, num_records_replaced),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"total_input_raw_key_bytes",
-         {offsetof(struct CompactionJobStats, total_input_raw_key_bytes),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"total_input_raw_value_bytes",
-         {offsetof(struct CompactionJobStats, total_input_raw_value_bytes),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"num_input_deletion_records",
-         {offsetof(struct CompactionJobStats, num_input_deletion_records),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"num_expired_deletion_records",
-         {offsetof(struct CompactionJobStats, num_expired_deletion_records),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"num_corrupt_keys",
-         {offsetof(struct CompactionJobStats, num_corrupt_keys),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"file_write_nanos",
-         {offsetof(struct CompactionJobStats, file_write_nanos),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"file_range_sync_nanos",
-         {offsetof(struct CompactionJobStats, file_range_sync_nanos),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"file_fsync_nanos",
-         {offsetof(struct CompactionJobStats, file_fsync_nanos),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"file_prepare_write_nanos",
-         {offsetof(struct CompactionJobStats, file_prepare_write_nanos),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"smallest_output_key_prefix",
-         {offsetof(struct CompactionJobStats, smallest_output_key_prefix),
-          OptionType::kEncodedString, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"largest_output_key_prefix",
-         {offsetof(struct CompactionJobStats, largest_output_key_prefix),
-          OptionType::kEncodedString, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"num_single_del_fallthru",
-         {offsetof(struct CompactionJobStats, num_single_del_fallthru),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"num_single_del_mismatch",
-         {offsetof(struct CompactionJobStats, num_single_del_mismatch),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetCompactionJobStatsTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      compaction_job_stats_type_info = {
+          {"elapsed_micros",
+           {offsetof(struct CompactionJobStats, elapsed_micros),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"cpu_micros",
+           {offsetof(struct CompactionJobStats, cpu_micros),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"num_input_records",
+           {offsetof(struct CompactionJobStats, num_input_records),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"num_blobs_read",
+           {offsetof(struct CompactionJobStats, num_blobs_read),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"num_input_files",
+           {offsetof(struct CompactionJobStats, num_input_files),
+            OptionType::kSizeT, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"num_input_files_at_output_level",
+           {offsetof(struct CompactionJobStats,
+                     num_input_files_at_output_level),
+            OptionType::kSizeT, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"num_output_records",
+           {offsetof(struct CompactionJobStats, num_output_records),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"num_output_files",
+           {offsetof(struct CompactionJobStats, num_output_files),
+            OptionType::kSizeT, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"num_output_files_blob",
+           {offsetof(struct CompactionJobStats, num_output_files_blob),
+            OptionType::kSizeT, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"is_full_compaction",
+           {offsetof(struct CompactionJobStats, is_full_compaction),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"is_manual_compaction",
+           {offsetof(struct CompactionJobStats, is_manual_compaction),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"total_input_bytes",
+           {offsetof(struct CompactionJobStats, total_input_bytes),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"total_blob_bytes_read",
+           {offsetof(struct CompactionJobStats, total_blob_bytes_read),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"total_output_bytes",
+           {offsetof(struct CompactionJobStats, total_output_bytes),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"total_output_bytes_blob",
+           {offsetof(struct CompactionJobStats, total_output_bytes_blob),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"num_records_replaced",
+           {offsetof(struct CompactionJobStats, num_records_replaced),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"total_input_raw_key_bytes",
+           {offsetof(struct CompactionJobStats, total_input_raw_key_bytes),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"total_input_raw_value_bytes",
+           {offsetof(struct CompactionJobStats, total_input_raw_value_bytes),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"num_input_deletion_records",
+           {offsetof(struct CompactionJobStats, num_input_deletion_records),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"num_expired_deletion_records",
+           {offsetof(struct CompactionJobStats, num_expired_deletion_records),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"num_corrupt_keys",
+           {offsetof(struct CompactionJobStats, num_corrupt_keys),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"file_write_nanos",
+           {offsetof(struct CompactionJobStats, file_write_nanos),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"file_range_sync_nanos",
+           {offsetof(struct CompactionJobStats, file_range_sync_nanos),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"file_fsync_nanos",
+           {offsetof(struct CompactionJobStats, file_fsync_nanos),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"file_prepare_write_nanos",
+           {offsetof(struct CompactionJobStats, file_prepare_write_nanos),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"smallest_output_key_prefix",
+           {offsetof(struct CompactionJobStats, smallest_output_key_prefix),
+            OptionType::kEncodedString, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"largest_output_key_prefix",
+           {offsetof(struct CompactionJobStats, largest_output_key_prefix),
+            OptionType::kEncodedString, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"num_single_del_fallthru",
+           {offsetof(struct CompactionJobStats, num_single_del_fallthru),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"num_single_del_mismatch",
+           {offsetof(struct CompactionJobStats, num_single_del_mismatch),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+      };
+  return compaction_job_stats_type_info;
+}
 
 namespace {
 // this is a helper struct to serialize and deserialize class Status, because
@@ -655,95 +675,103 @@ struct StatusSerializationAdapter {
 };
 }  // namespace
 
-static std::unordered_map<std::string, OptionTypeInfo>
-    status_adapter_type_info = {
-        {"code",
-         {offsetof(struct StatusSerializationAdapter, code),
-          OptionType::kUInt8T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"subcode",
-         {offsetof(struct StatusSerializationAdapter, subcode),
-          OptionType::kUInt8T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"severity",
-         {offsetof(struct StatusSerializationAdapter, severity),
-          OptionType::kUInt8T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"message",
-         {offsetof(struct StatusSerializationAdapter, message),
-          OptionType::kEncodedString, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetStatusAdapterTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      status_adapter_type_info = {
+          {"code",
+           {offsetof(struct StatusSerializationAdapter, code),
+            OptionType::kUInt8T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"subcode",
+           {offsetof(struct StatusSerializationAdapter, subcode),
+            OptionType::kUInt8T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"severity",
+           {offsetof(struct StatusSerializationAdapter, severity),
+            OptionType::kUInt8T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"message",
+           {offsetof(struct StatusSerializationAdapter, message),
+            OptionType::kEncodedString, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+      };
+  return status_adapter_type_info;
+}
 
-static std::unordered_map<std::string, OptionTypeInfo> cs_result_type_info = {
-    {"status",
-     {offsetof(struct CompactionServiceResult, status),
-      OptionType::kCustomizable, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone,
-      [](const ConfigOptions& opts, const std::string& /*name*/,
-         const std::string& value, void* addr) {
-        auto status_obj = static_cast<Status*>(addr);
-        StatusSerializationAdapter adapter;
-        Status s = OptionTypeInfo::ParseType(
-            opts, value, status_adapter_type_info, &adapter);
-        *status_obj = adapter.GetStatus();
-        return s;
-      },
-      [](const ConfigOptions& opts, const std::string& /*name*/,
-         const void* addr, std::string* value) {
-        const auto status_obj = static_cast<const Status*>(addr);
-        StatusSerializationAdapter adapter(*status_obj);
-        std::string result;
-        Status s = OptionTypeInfo::SerializeType(opts, status_adapter_type_info,
-                                                 &adapter, &result);
-        *value = "{" + result + "}";
-        return s;
-      },
-      [](const ConfigOptions& opts, const std::string& /*name*/,
-         const void* addr1, const void* addr2, std::string* mismatch) {
-        const auto status1 = static_cast<const Status*>(addr1);
-        const auto status2 = static_cast<const Status*>(addr2);
+static std::unordered_map<std::string, OptionTypeInfo>& GetCSResultTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> cs_result_type_info = {
+      {"status",
+       {offsetof(struct CompactionServiceResult, status),
+        OptionType::kCustomizable, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone,
+        [](const ConfigOptions& opts, const std::string& /*name*/,
+           const std::string& value, void* addr) {
+          auto status_obj = static_cast<Status*>(addr);
+          StatusSerializationAdapter adapter;
+          Status s = OptionTypeInfo::ParseType(
+              opts, value, GetStatusAdapterTypeInfo(), &adapter);
+          *status_obj = adapter.GetStatus();
+          return s;
+        },
+        [](const ConfigOptions& opts, const std::string& /*name*/,
+           const void* addr, std::string* value) {
+          const auto status_obj = static_cast<const Status*>(addr);
+          StatusSerializationAdapter adapter(*status_obj);
+          std::string result;
+          Status s = OptionTypeInfo::SerializeType(
+              opts, GetStatusAdapterTypeInfo(), &adapter, &result);
+          *value = "{" + result + "}";
+          return s;
+        },
+        [](const ConfigOptions& opts, const std::string& /*name*/,
+           const void* addr1, const void* addr2, std::string* mismatch) {
+          const auto status1 = static_cast<const Status*>(addr1);
+          const auto status2 = static_cast<const Status*>(addr2);
 
-        StatusSerializationAdapter adatper1(*status1);
-        StatusSerializationAdapter adapter2(*status2);
-        return OptionTypeInfo::TypesAreEqual(opts, status_adapter_type_info,
-                                             &adatper1, &adapter2, mismatch);
-      }}},
-    {"output_files",
-     OptionTypeInfo::Vector<CompactionServiceOutputFile>(
-         offsetof(struct CompactionServiceResult, output_files),
-         OptionVerificationType::kNormal, OptionTypeFlags::kNone,
-         OptionTypeInfo::Struct("output_files", &cs_output_file_type_info, 0,
-                                OptionVerificationType::kNormal,
-                                OptionTypeFlags::kNone))},
-    {"output_level",
-     {offsetof(struct CompactionServiceResult, output_level), OptionType::kInt,
-      OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
-    {"output_path",
-     {offsetof(struct CompactionServiceResult, output_path),
-      OptionType::kEncodedString, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-    {"num_output_records",
-     {offsetof(struct CompactionServiceResult, num_output_records),
-      OptionType::kUInt64T, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-    {"total_bytes",
-     {offsetof(struct CompactionServiceResult, total_bytes),
-      OptionType::kUInt64T, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-    {"bytes_read",
-     {offsetof(struct CompactionServiceResult, bytes_read),
-      OptionType::kUInt64T, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-    {"bytes_written",
-     {offsetof(struct CompactionServiceResult, bytes_written),
-      OptionType::kUInt64T, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-    {"stats", OptionTypeInfo::Struct(
-                  "stats", &compaction_job_stats_type_info,
-                  offsetof(struct CompactionServiceResult, stats),
-                  OptionVerificationType::kNormal, OptionTypeFlags::kNone)},
-};
+          StatusSerializationAdapter adatper1(*status1);
+          StatusSerializationAdapter adapter2(*status2);
+          return OptionTypeInfo::TypesAreEqual(opts, GetStatusAdapterTypeInfo(),
+                                               &adatper1, &adapter2, mismatch);
+        }}},
+      {"output_files",
+       OptionTypeInfo::Vector<CompactionServiceOutputFile>(
+           offsetof(struct CompactionServiceResult, output_files),
+           OptionVerificationType::kNormal, OptionTypeFlags::kNone,
+           OptionTypeInfo::Struct("output_files", &GetCSOutputFileTypeInfo(), 0,
+                                  OptionVerificationType::kNormal,
+                                  OptionTypeFlags::kNone))},
+      {"output_level",
+       {offsetof(struct CompactionServiceResult, output_level),
+        OptionType::kInt, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"output_path",
+       {offsetof(struct CompactionServiceResult, output_path),
+        OptionType::kEncodedString, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"num_output_records",
+       {offsetof(struct CompactionServiceResult, num_output_records),
+        OptionType::kUInt64T, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"total_bytes",
+       {offsetof(struct CompactionServiceResult, total_bytes),
+        OptionType::kUInt64T, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"bytes_read",
+       {offsetof(struct CompactionServiceResult, bytes_read),
+        OptionType::kUInt64T, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"bytes_written",
+       {offsetof(struct CompactionServiceResult, bytes_written),
+        OptionType::kUInt64T, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"stats", OptionTypeInfo::Struct(
+                    "stats", &GetCompactionJobStatsTypeInfo(),
+                    offsetof(struct CompactionServiceResult, stats),
+                    OptionVerificationType::kNormal, OptionTypeFlags::kNone)},
+  };
+  return cs_result_type_info;
+}
 
 Status CompactionServiceInput::Read(const std::string& data_str,
                                     CompactionServiceInput* obj) {
@@ -756,7 +784,7 @@ Status CompactionServiceInput::Read(const std::string& data_str,
     cf.invoke_prepare_options = false;
     cf.ignore_unknown_options = true;
     return OptionTypeInfo::ParseType(
-        cf, data_str.substr(sizeof(BinaryFormatVersion)), cs_input_type_info,
+        cf, data_str.substr(sizeof(BinaryFormatVersion)), GetCSInputTypeInfo(),
         obj);
   } else {
     return Status::NotSupported(
@@ -771,7 +799,7 @@ Status CompactionServiceInput::Write(std::string* output) {
   output->append(buf, sizeof(BinaryFormatVersion));
   ConfigOptions cf;
   cf.invoke_prepare_options = false;
-  return OptionTypeInfo::SerializeType(cf, cs_input_type_info, this, output);
+  return OptionTypeInfo::SerializeType(cf, GetCSInputTypeInfo(), this, output);
 }
 
 Status CompactionServiceResult::Read(const std::string& data_str,
@@ -785,7 +813,7 @@ Status CompactionServiceResult::Read(const std::string& data_str,
     cf.invoke_prepare_options = false;
     cf.ignore_unknown_options = true;
     return OptionTypeInfo::ParseType(
-        cf, data_str.substr(sizeof(BinaryFormatVersion)), cs_result_type_info,
+        cf, data_str.substr(sizeof(BinaryFormatVersion)), GetCSResultTypeInfo(),
         obj);
   } else {
     return Status::NotSupported(
@@ -800,7 +828,7 @@ Status CompactionServiceResult::Write(std::string* output) {
   output->append(buf, sizeof(BinaryFormatVersion));
   ConfigOptions cf;
   cf.invoke_prepare_options = false;
-  return OptionTypeInfo::SerializeType(cf, cs_result_type_info, this, output);
+  return OptionTypeInfo::SerializeType(cf, GetCSResultTypeInfo(), this, output);
 }
 
 #ifndef NDEBUG
@@ -813,7 +841,7 @@ bool CompactionServiceResult::TEST_Equals(CompactionServiceResult* other,
                                           std::string* mismatch) {
   ConfigOptions cf;
   cf.invoke_prepare_options = false;
-  return OptionTypeInfo::TypesAreEqual(cf, cs_result_type_info, this, other,
+  return OptionTypeInfo::TypesAreEqual(cf, GetCSResultTypeInfo(), this, other,
                                        mismatch);
 }
 
@@ -826,7 +854,7 @@ bool CompactionServiceInput::TEST_Equals(CompactionServiceInput* other,
                                          std::string* mismatch) {
   ConfigOptions cf;
   cf.invoke_prepare_options = false;
-  return OptionTypeInfo::TypesAreEqual(cf, cs_input_type_info, this, other,
+  return OptionTypeInfo::TypesAreEqual(cf, GetCSInputTypeInfo(), this, other,
                                        mismatch);
 }
 #endif  // NDEBUG

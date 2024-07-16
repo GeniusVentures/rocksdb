@@ -2157,13 +2157,18 @@ enum OperationType : unsigned char {
   kOthers
 };
 
-static std::unordered_map<OperationType, std::string, std::hash<unsigned char>>
-    OperationTypeString = {{kRead, "read"},         {kWrite, "write"},
-                           {kDelete, "delete"},     {kSeek, "seek"},
-                           {kMerge, "merge"},       {kUpdate, "update"},
-                           {kCompress, "compress"}, {kCompress, "uncompress"},
-                           {kCrc, "crc"},           {kHash, "hash"},
-                           {kOthers, "op"}};
+static std::unordered_map<OperationType, std::string, std::hash<unsigned char>>&
+GetOperationTypeString() {
+  static std::unordered_map<OperationType, std::string,
+                            std::hash<unsigned char>>
+      OperationTypeString = {{kRead, "read"},         {kWrite, "write"},
+                             {kDelete, "delete"},     {kSeek, "seek"},
+                             {kMerge, "merge"},       {kUpdate, "update"},
+                             {kCompress, "compress"}, {kCompress, "uncompress"},
+                             {kCrc, "crc"},           {kHash, "hash"},
+                             {kOthers, "op"}};
+  return OperationTypeString;
+}
 
 class CombinedStats;
 class Stats {
@@ -2450,7 +2455,7 @@ class Stats {
     if (FLAGS_histogram) {
       for (auto it = hist_.begin(); it != hist_.end(); ++it) {
         fprintf(stdout, "Microseconds per %s:\n%s\n",
-                OperationTypeString[it->first].c_str(),
+                GetOperationTypeString()[it->first].c_str(),
                 it->second->ToString().c_str());
       }
     }

@@ -13,16 +13,20 @@
 #include "rocksdb/utilities/options_type.h"
 
 namespace ROCKSDB_NAMESPACE {
-static std::unordered_map<std::string, OptionTypeInfo>
-    sst_fixed_prefix_type_info = {
-        {"length",
-         {0, OptionType::kSizeT, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetSSTFixedPrefixTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      sst_fixed_prefix_type_info = {
+          {"length",
+           {0, OptionType::kSizeT, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+      };
+  return sst_fixed_prefix_type_info;
+}
 
 SstPartitionerFixedPrefixFactory::SstPartitionerFixedPrefixFactory(size_t len)
     : len_(len) {
-  RegisterOptions("Length", &len_, &sst_fixed_prefix_type_info);
+  RegisterOptions("Length", &len_, &GetSSTFixedPrefixTypeInfo());
 }
 
 PartitionerResult SstPartitionerFixedPrefix::ShouldPartition(

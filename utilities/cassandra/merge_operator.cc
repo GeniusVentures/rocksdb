@@ -15,6 +15,7 @@
 #include "utilities/merge_operators.h"
 
 namespace ROCKSDB_NAMESPACE::cassandra {
+static std::unordered_map<std::string, OptionTypeInfo> &GetMergeOperatorOptionsInfo() {
 static std::unordered_map<std::string, OptionTypeInfo>
     merge_operator_options_info = {
         {"gc_grace_period_in_seconds",
@@ -25,11 +26,13 @@ static std::unordered_map<std::string, OptionTypeInfo>
          {offsetof(struct CassandraOptions, operands_limit), OptionType::kSizeT,
           OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
 };
+return merge_operator_options_info;
+}
 
 CassandraValueMergeOperator::CassandraValueMergeOperator(
     int32_t gc_grace_period_in_seconds, size_t operands_limit)
     : options_(gc_grace_period_in_seconds, operands_limit) {
-  RegisterOptions(&options_, &merge_operator_options_info);
+  RegisterOptions(&options_, &GetMergeOperatorOptionsInfo());
 }
 
 // Implementation for the merge operation (merges two Cassandra values)

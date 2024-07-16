@@ -18,15 +18,20 @@
 #include "util/coding.h"
 
 namespace ROCKSDB_NAMESPACE {
-static std::unordered_map<std::string, OptionTypeInfo> ttl_merge_op_type_info =
-    {{"user_operator", OptionTypeInfo::AsCustomSharedPtr<MergeOperator>(
-                           0, OptionVerificationType::kByNameAllowNull,
-                           OptionTypeFlags::kNone)}};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetTTLMergeOpTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      ttl_merge_op_type_info = {
+          {"user_operator", OptionTypeInfo::AsCustomSharedPtr<MergeOperator>(
+                                0, OptionVerificationType::kByNameAllowNull,
+                                OptionTypeFlags::kNone)}};
+  return ttl_merge_op_type_info;
+}
 
 TtlMergeOperator::TtlMergeOperator(
     const std::shared_ptr<MergeOperator>& merge_op, SystemClock* clock)
     : user_merge_op_(merge_op), clock_(clock) {
-  RegisterOptions("TtlMergeOptions", &user_merge_op_, &ttl_merge_op_type_info);
+  RegisterOptions("TtlMergeOptions", &user_merge_op_, &GetTTLMergeOpTypeInfo());
 }
 
 bool TtlMergeOperator::FullMergeV2(const MergeOperationInput& merge_in,
@@ -171,19 +176,27 @@ void DBWithTTLImpl::SanitizeOptions(int32_t ttl, ColumnFamilyOptions* options,
   }
 }
 
-static std::unordered_map<std::string, OptionTypeInfo> ttl_type_info = {
-    {"ttl", {0, OptionType::kInt32T}},
-};
-
-static std::unordered_map<std::string, OptionTypeInfo> ttl_cff_type_info = {
-    {"user_filter_factory",
-     OptionTypeInfo::AsCustomSharedPtr<CompactionFilterFactory>(
-         0, OptionVerificationType::kByNameAllowFromNull,
-         OptionTypeFlags::kNone)}};
-static std::unordered_map<std::string, OptionTypeInfo> user_cf_type_info = {
-    {"user_filter",
-     OptionTypeInfo::AsCustomRawPtr<const CompactionFilter>(
-         0, OptionVerificationType::kByName, OptionTypeFlags::kAllowNull)}};
+static std::unordered_map<std::string, OptionTypeInfo>& GetTTLTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> ttl_type_info = {
+      {"ttl", {0, OptionType::kInt32T}},
+  };
+  return ttl_type_info;
+}
+static std::unordered_map<std::string, OptionTypeInfo>& GetTLLCffTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> ttl_cff_type_info = {
+      {"user_filter_factory",
+       OptionTypeInfo::AsCustomSharedPtr<CompactionFilterFactory>(
+           0, OptionVerificationType::kByNameAllowFromNull,
+           OptionTypeFlags::kNone)}};
+  return ttl_cff_type_info;
+}
+static std::unordered_map<std::string, OptionTypeInfo>& GetUserCfTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> user_cf_type_info = {
+      {"user_filter",
+       OptionTypeInfo::AsCustomRawPtr<const CompactionFilter>(
+           0, OptionVerificationType::kByName, OptionTypeFlags::kAllowNull)}};
+  return user_cf_type_info;
+}
 
 TtlCompactionFilter::TtlCompactionFilter(
     int32_t ttl, SystemClock* clock, const CompactionFilter* _user_comp_filter,
@@ -192,8 +205,8 @@ TtlCompactionFilter::TtlCompactionFilter(
                                   std::move(_user_comp_filter_from_factory)),
       ttl_(ttl),
       clock_(clock) {
-  RegisterOptions("TTL", &ttl_, &ttl_type_info);
-  RegisterOptions("UserFilter", &user_comp_filter_, &user_cf_type_info);
+  RegisterOptions("TTL", &ttl_, &GetTTLTypeInfo());
+  RegisterOptions("UserFilter", &user_comp_filter_, &GetUserCfTypeInfo());
 }
 
 bool TtlCompactionFilter::Filter(int level, const Slice& key,
@@ -242,8 +255,8 @@ TtlCompactionFilterFactory::TtlCompactionFilterFactory(
     std::shared_ptr<CompactionFilterFactory> comp_filter_factory)
     : ttl_(ttl), clock_(clock), user_comp_filter_factory_(comp_filter_factory) {
   RegisterOptions("UserOptions", &user_comp_filter_factory_,
-                  &ttl_cff_type_info);
-  RegisterOptions("TTL", &ttl_, &ttl_type_info);
+                  &GetTLLCffTypeInfo());
+  RegisterOptions("TTL", &ttl_, &GetTTLTypeInfo());
 }
 
 std::unique_ptr<CompactionFilter>

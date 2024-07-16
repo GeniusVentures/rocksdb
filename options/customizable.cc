@@ -67,7 +67,6 @@ std::string Customizable::SerializeOptions(const ConfigOptions& config_options,
   return result;
 }
 
-
 bool Customizable::AreEquivalent(const ConfigOptions& config_options,
                                  const Configurable* other,
                                  std::string* mismatch) const {
@@ -94,7 +93,7 @@ Status Customizable::GetOptionsMap(
     const std::string& value, std::string* id,
     std::unordered_map<std::string, std::string>* props) {
   Status status;
-  if (value.empty() || value == kNullptrString) {
+  if (value.empty() || value == GetNullptrString()) {
     *id = "";
     props->clear();
   } else if (customizable != nullptr) {

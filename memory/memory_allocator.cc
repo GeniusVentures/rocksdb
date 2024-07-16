@@ -14,10 +14,16 @@
 
 namespace ROCKSDB_NAMESPACE {
 namespace {
-static std::unordered_map<std::string, OptionTypeInfo> ma_wrapper_type_info = {
-    {"target", OptionTypeInfo::AsCustomSharedPtr<MemoryAllocator>(
-                   0, OptionVerificationType::kByName, OptionTypeFlags::kNone)},
-};
+static std::unordered_map<std::string, OptionTypeInfo>& GetMAWrapperTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> ma_wrapper_type_info =
+      {
+          {"target",
+           OptionTypeInfo::AsCustomSharedPtr<MemoryAllocator>(
+               0, OptionVerificationType::kByName, OptionTypeFlags::kNone)},
+      };
+
+  return ma_wrapper_type_info;
+}
 
 static int RegisterBuiltinAllocators(ObjectLibrary& library,
                                      const std::string& /*arg*/) {
@@ -63,7 +69,7 @@ static int RegisterBuiltinAllocators(ObjectLibrary& library,
 MemoryAllocatorWrapper::MemoryAllocatorWrapper(
     const std::shared_ptr<MemoryAllocator>& t)
     : target_(t) {
-  RegisterOptions("", &target_, &ma_wrapper_type_info);
+  RegisterOptions("", &target_, &GetMAWrapperTypeInfo());
 }
 
 Status MemoryAllocator::CreateFromString(

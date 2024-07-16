@@ -1944,7 +1944,7 @@ static int RegisterBuiltinFilterPolicies(ObjectLibrary& library,
 Status FilterPolicy::CreateFromString(
     const ConfigOptions& options, const std::string& value,
     std::shared_ptr<const FilterPolicy>* policy) {
-  if (value == kNullptrString || value.empty()) {
+  if (value == GetNullptrString() || value.empty()) {
     policy->reset();
     return Status::OK();
   } else if (value == ReadOnlyBuiltinFilterPolicy::kClassName()) {

@@ -164,255 +164,293 @@ size_t TailPrefetchStats::GetSuggestedPrefetchSize() {
   return std::min(kMaxPrefetchSize, max_qualified_size);
 }
 
-const std::string kOptNameMetadataCacheOpts = "metadata_cache_options";
+const std::string_view kOptNameMetadataCacheOpts = "metadata_cache_options";
 
-static std::unordered_map<std::string, PinningTier>
-    pinning_tier_type_string_map = {
-        {"kFallback", PinningTier::kFallback},
-        {"kNone", PinningTier::kNone},
-        {"kFlushedAndSimilar", PinningTier::kFlushedAndSimilar},
-        {"kAll", PinningTier::kAll}};
+static std::unordered_map<std::string, PinningTier>&
+GetPinningTierTypeStringMap() {
+  static std::unordered_map<std::string, PinningTier>
+      pinning_tier_type_string_map = {
+          {"kFallback", PinningTier::kFallback},
+          {"kNone", PinningTier::kNone},
+          {"kFlushedAndSimilar", PinningTier::kFlushedAndSimilar},
+          {"kAll", PinningTier::kAll}};
+  return pinning_tier_type_string_map;
+}
 
-static std::unordered_map<std::string, BlockBasedTableOptions::IndexType>
-    block_base_table_index_type_string_map = {
-        {"kBinarySearch", BlockBasedTableOptions::IndexType::kBinarySearch},
-        {"kHashSearch", BlockBasedTableOptions::IndexType::kHashSearch},
-        {"kTwoLevelIndexSearch",
-         BlockBasedTableOptions::IndexType::kTwoLevelIndexSearch},
-        {"kBinarySearchWithFirstKey",
-         BlockBasedTableOptions::IndexType::kBinarySearchWithFirstKey}};
-
-static std::unordered_map<std::string,
-                          BlockBasedTableOptions::DataBlockIndexType>
-    block_base_table_data_block_index_type_string_map = {
-        {"kDataBlockBinarySearch",
-         BlockBasedTableOptions::DataBlockIndexType::kDataBlockBinarySearch},
-        {"kDataBlockBinaryAndHash",
-         BlockBasedTableOptions::DataBlockIndexType::kDataBlockBinaryAndHash}};
-
-static std::unordered_map<std::string,
-                          BlockBasedTableOptions::IndexShorteningMode>
-    block_base_table_index_shortening_mode_string_map = {
-        {"kNoShortening",
-         BlockBasedTableOptions::IndexShorteningMode::kNoShortening},
-        {"kShortenSeparators",
-         BlockBasedTableOptions::IndexShorteningMode::kShortenSeparators},
-        {"kShortenSeparatorsAndSuccessor",
-         BlockBasedTableOptions::IndexShorteningMode::
-             kShortenSeparatorsAndSuccessor}};
-
-static std::unordered_map<std::string, OptionTypeInfo>
-    metadata_cache_options_type_info = {
-        {"top_level_index_pinning",
-         OptionTypeInfo::Enum<PinningTier>(
-             offsetof(struct MetadataCacheOptions, top_level_index_pinning),
-             &pinning_tier_type_string_map)},
-        {"partition_pinning",
-         OptionTypeInfo::Enum<PinningTier>(
-             offsetof(struct MetadataCacheOptions, partition_pinning),
-             &pinning_tier_type_string_map)},
-        {"unpartitioned_pinning",
-         OptionTypeInfo::Enum<PinningTier>(
-             offsetof(struct MetadataCacheOptions, unpartitioned_pinning),
-             &pinning_tier_type_string_map)}};
+static std::unordered_map<std::string, BlockBasedTableOptions::IndexType>&
+GetBlockBaseTableIndexTypeStringMap() {
+  static std::unordered_map<std::string, BlockBasedTableOptions::IndexType>
+      block_base_table_index_type_string_map = {
+          {"kBinarySearch", BlockBasedTableOptions::IndexType::kBinarySearch},
+          {"kHashSearch", BlockBasedTableOptions::IndexType::kHashSearch},
+          {"kTwoLevelIndexSearch",
+           BlockBasedTableOptions::IndexType::kTwoLevelIndexSearch},
+          {"kBinarySearchWithFirstKey",
+           BlockBasedTableOptions::IndexType::kBinarySearchWithFirstKey}};
+  return block_base_table_index_type_string_map;
+}
 
 static std::unordered_map<std::string,
-                          BlockBasedTableOptions::PrepopulateBlockCache>
-    block_base_table_prepopulate_block_cache_string_map = {
-        {"kDisable", BlockBasedTableOptions::PrepopulateBlockCache::kDisable},
-        {"kFlushOnly",
-         BlockBasedTableOptions::PrepopulateBlockCache::kFlushOnly}};
+                          BlockBasedTableOptions::DataBlockIndexType>&
+GetBlockBaseTableDataBlockIndexTypeStringMap() {
+  static std::unordered_map<std::string,
+                            BlockBasedTableOptions::DataBlockIndexType>
+      block_base_table_data_block_index_type_string_map = {
+          {"kDataBlockBinarySearch",
+           BlockBasedTableOptions::DataBlockIndexType::kDataBlockBinarySearch},
+          {"kDataBlockBinaryAndHash",
+           BlockBasedTableOptions::DataBlockIndexType::
+               kDataBlockBinaryAndHash}};
+  return block_base_table_data_block_index_type_string_map;
+}
 
-static std::unordered_map<std::string, OptionTypeInfo>
-    block_based_table_type_info = {
-        /* currently not supported
-          std::shared_ptr<Cache> block_cache = nullptr;
-          CacheUsageOptions cache_usage_options;
-         */
-        {"flush_block_policy_factory",
-         OptionTypeInfo::AsCustomSharedPtr<FlushBlockPolicyFactory>(
-             offsetof(struct BlockBasedTableOptions,
-                      flush_block_policy_factory),
-             OptionVerificationType::kByName, OptionTypeFlags::kCompareNever)},
-        {"cache_index_and_filter_blocks",
-         {offsetof(struct BlockBasedTableOptions,
-                   cache_index_and_filter_blocks),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"cache_index_and_filter_blocks_with_high_priority",
-         {offsetof(struct BlockBasedTableOptions,
-                   cache_index_and_filter_blocks_with_high_priority),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"pin_l0_filter_and_index_blocks_in_cache",
-         {offsetof(struct BlockBasedTableOptions,
-                   pin_l0_filter_and_index_blocks_in_cache),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"index_type", OptionTypeInfo::Enum<BlockBasedTableOptions::IndexType>(
-                           offsetof(struct BlockBasedTableOptions, index_type),
-                           &block_base_table_index_type_string_map)},
-        {"hash_index_allow_collision",
-         {0, OptionType::kBoolean, OptionVerificationType::kDeprecated,
-          OptionTypeFlags::kNone}},
-        {"data_block_index_type",
-         OptionTypeInfo::Enum<BlockBasedTableOptions::DataBlockIndexType>(
-             offsetof(struct BlockBasedTableOptions, data_block_index_type),
-             &block_base_table_data_block_index_type_string_map)},
-        {"index_shortening",
-         OptionTypeInfo::Enum<BlockBasedTableOptions::IndexShorteningMode>(
-             offsetof(struct BlockBasedTableOptions, index_shortening),
-             &block_base_table_index_shortening_mode_string_map)},
-        {"data_block_hash_table_util_ratio",
-         {offsetof(struct BlockBasedTableOptions,
-                   data_block_hash_table_util_ratio),
-          OptionType::kDouble, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"checksum",
-         {offsetof(struct BlockBasedTableOptions, checksum),
-          OptionType::kChecksumType, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"no_block_cache",
-         {offsetof(struct BlockBasedTableOptions, no_block_cache),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"block_size",
-         {offsetof(struct BlockBasedTableOptions, block_size),
-          OptionType::kSizeT, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
-        {"block_size_deviation",
-         {offsetof(struct BlockBasedTableOptions, block_size_deviation),
-          OptionType::kInt, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"block_restart_interval",
-         {offsetof(struct BlockBasedTableOptions, block_restart_interval),
-          OptionType::kInt, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
-        {"index_block_restart_interval",
-         {offsetof(struct BlockBasedTableOptions, index_block_restart_interval),
-          OptionType::kInt, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"index_per_partition",
-         {0, OptionType::kUInt64T, OptionVerificationType::kDeprecated,
-          OptionTypeFlags::kNone}},
-        {"metadata_block_size",
-         {offsetof(struct BlockBasedTableOptions, metadata_block_size),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"partition_filters",
-         {offsetof(struct BlockBasedTableOptions, partition_filters),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"optimize_filters_for_memory",
-         {offsetof(struct BlockBasedTableOptions, optimize_filters_for_memory),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"use_delta_encoding",
-         {offsetof(struct BlockBasedTableOptions, use_delta_encoding),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"filter_policy",
-         OptionTypeInfo::AsCustomSharedPtr<const FilterPolicy>(
-             offsetof(struct BlockBasedTableOptions, filter_policy),
-             OptionVerificationType::kByNameAllowFromNull,
-             OptionTypeFlags::kNone)},
-        {"whole_key_filtering",
-         {offsetof(struct BlockBasedTableOptions, whole_key_filtering),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"detect_filter_construct_corruption",
-         {offsetof(struct BlockBasedTableOptions,
-                   detect_filter_construct_corruption),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
-        {"reserve_table_builder_memory",
-         {0, OptionType::kBoolean, OptionVerificationType::kDeprecated,
-          OptionTypeFlags::kNone}},
-        {"reserve_table_reader_memory",
-         {0, OptionType::kBoolean, OptionVerificationType::kDeprecated,
-          OptionTypeFlags::kNone}},
-        {"skip_table_builder_flush",
-         {0, OptionType::kBoolean, OptionVerificationType::kDeprecated,
-          OptionTypeFlags::kNone}},
-        {"format_version",
-         {offsetof(struct BlockBasedTableOptions, format_version),
-          OptionType::kUInt32T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"verify_compression",
-         {offsetof(struct BlockBasedTableOptions, verify_compression),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"read_amp_bytes_per_bit",
-         {offsetof(struct BlockBasedTableOptions, read_amp_bytes_per_bit),
-          OptionType::kUInt32T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone,
-          [](const ConfigOptions& /*opts*/, const std::string& /*name*/,
-             const std::string& value, void* addr) {
-            // A workaround to fix a bug in 6.10, 6.11, 6.12, 6.13
-            // and 6.14. The bug will write out 8 bytes to OPTIONS file from the
-            // starting address of BlockBasedTableOptions.read_amp_bytes_per_bit
-            // which is actually a uint32. Consequently, the value of
-            // read_amp_bytes_per_bit written in the OPTIONS file is wrong.
-            // From 6.15, RocksDB will try to parse the read_amp_bytes_per_bit
-            // from OPTIONS file as a uint32. To be able to load OPTIONS file
-            // generated by affected releases before the fix, we need to
-            // manually parse read_amp_bytes_per_bit with this special hack.
-            uint64_t read_amp_bytes_per_bit = ParseUint64(value);
-            *(static_cast<uint32_t*>(addr)) =
-                static_cast<uint32_t>(read_amp_bytes_per_bit);
-            return Status::OK();
-          }}},
-        {"enable_index_compression",
-         {offsetof(struct BlockBasedTableOptions, enable_index_compression),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"block_align",
-         {offsetof(struct BlockBasedTableOptions, block_align),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"pin_top_level_index_and_filter",
-         {offsetof(struct BlockBasedTableOptions,
-                   pin_top_level_index_and_filter),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {kOptNameMetadataCacheOpts,
-         OptionTypeInfo::Struct(
-             kOptNameMetadataCacheOpts, &metadata_cache_options_type_info,
-             offsetof(struct BlockBasedTableOptions, metadata_cache_options),
-             OptionVerificationType::kNormal, OptionTypeFlags::kNone)},
-        {"block_cache",
-         {offsetof(struct BlockBasedTableOptions, block_cache),
-          OptionType::kUnknown, OptionVerificationType::kNormal,
-          (OptionTypeFlags::kCompareNever | OptionTypeFlags::kDontSerialize),
-          // Parses the input value as a Cache
-          [](const ConfigOptions& opts, const std::string&,
-             const std::string& value, void* addr) {
-            auto* cache = static_cast<std::shared_ptr<Cache>*>(addr);
-            return Cache::CreateFromString(opts, value, cache);
-          }}},
-        {"block_cache_compressed",
-         {0, OptionType::kUnknown, OptionVerificationType::kDeprecated,
-          OptionTypeFlags::kNone}},
-        {"max_auto_readahead_size",
-         {offsetof(struct BlockBasedTableOptions, max_auto_readahead_size),
-          OptionType::kSizeT, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
-        {"prepopulate_block_cache",
-         OptionTypeInfo::Enum<BlockBasedTableOptions::PrepopulateBlockCache>(
-             offsetof(struct BlockBasedTableOptions, prepopulate_block_cache),
-             &block_base_table_prepopulate_block_cache_string_map,
-             OptionTypeFlags::kMutable)},
-        {"initial_auto_readahead_size",
-         {offsetof(struct BlockBasedTableOptions, initial_auto_readahead_size),
-          OptionType::kSizeT, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
-        {"num_file_reads_for_auto_readahead",
-         {offsetof(struct BlockBasedTableOptions,
-                   num_file_reads_for_auto_readahead),
-          OptionType::kUInt64T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kMutable}},
+static std::unordered_map<std::string,
+                          BlockBasedTableOptions::IndexShorteningMode>&
+GetBlockBaseTableIndexShorteningModeStringMap() {
+  static std::unordered_map<std::string,
+                            BlockBasedTableOptions::IndexShorteningMode>
+      block_base_table_index_shortening_mode_string_map = {
+          {"kNoShortening",
+           BlockBasedTableOptions::IndexShorteningMode::kNoShortening},
+          {"kShortenSeparators",
+           BlockBasedTableOptions::IndexShorteningMode::kShortenSeparators},
+          {"kShortenSeparatorsAndSuccessor",
+           BlockBasedTableOptions::IndexShorteningMode::
+               kShortenSeparatorsAndSuccessor}};
+  return block_base_table_index_shortening_mode_string_map;
+}
 
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetMetadataCacheOptionsTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      metadata_cache_options_type_info = {
+          {"top_level_index_pinning",
+           OptionTypeInfo::Enum<PinningTier>(
+               offsetof(struct MetadataCacheOptions, top_level_index_pinning),
+               &GetPinningTierTypeStringMap())},
+          {"partition_pinning",
+           OptionTypeInfo::Enum<PinningTier>(
+               offsetof(struct MetadataCacheOptions, partition_pinning),
+               &GetPinningTierTypeStringMap())},
+          {"unpartitioned_pinning",
+           OptionTypeInfo::Enum<PinningTier>(
+               offsetof(struct MetadataCacheOptions, unpartitioned_pinning),
+               &GetPinningTierTypeStringMap())}};
+  return metadata_cache_options_type_info;
+}
+
+static std::unordered_map<std::string,
+                          BlockBasedTableOptions::PrepopulateBlockCache>&
+GetBlockBaseTablePrePopulateBlockCacheStringMap() {
+  static std::unordered_map<std::string,
+                            BlockBasedTableOptions::PrepopulateBlockCache>
+      block_base_table_prepopulate_block_cache_string_map = {
+          {"kDisable", BlockBasedTableOptions::PrepopulateBlockCache::kDisable},
+          {"kFlushOnly",
+           BlockBasedTableOptions::PrepopulateBlockCache::kFlushOnly}};
+  return block_base_table_prepopulate_block_cache_string_map;
+}
+
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetBlockBasedTableTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      block_based_table_type_info = {
+          /* currently not supported
+            std::shared_ptr<Cache> block_cache = nullptr;
+            CacheUsageOptions cache_usage_options;
+           */
+          {"flush_block_policy_factory",
+           OptionTypeInfo::AsCustomSharedPtr<FlushBlockPolicyFactory>(
+               offsetof(struct BlockBasedTableOptions,
+                        flush_block_policy_factory),
+               OptionVerificationType::kByName,
+               OptionTypeFlags::kCompareNever)},
+          {"cache_index_and_filter_blocks",
+           {offsetof(struct BlockBasedTableOptions,
+                     cache_index_and_filter_blocks),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"cache_index_and_filter_blocks_with_high_priority",
+           {offsetof(struct BlockBasedTableOptions,
+                     cache_index_and_filter_blocks_with_high_priority),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"pin_l0_filter_and_index_blocks_in_cache",
+           {offsetof(struct BlockBasedTableOptions,
+                     pin_l0_filter_and_index_blocks_in_cache),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"index_type",
+           OptionTypeInfo::Enum<BlockBasedTableOptions::IndexType>(
+               offsetof(struct BlockBasedTableOptions, index_type),
+               &GetBlockBaseTableIndexTypeStringMap())},
+          {"hash_index_allow_collision",
+           {0, OptionType::kBoolean, OptionVerificationType::kDeprecated,
+            OptionTypeFlags::kNone}},
+          {"data_block_index_type",
+           OptionTypeInfo::Enum<BlockBasedTableOptions::DataBlockIndexType>(
+               offsetof(struct BlockBasedTableOptions, data_block_index_type),
+               &GetBlockBaseTableDataBlockIndexTypeStringMap())},
+          {"index_shortening",
+           OptionTypeInfo::Enum<BlockBasedTableOptions::IndexShorteningMode>(
+               offsetof(struct BlockBasedTableOptions, index_shortening),
+               &GetBlockBaseTableIndexShorteningModeStringMap())},
+          {"data_block_hash_table_util_ratio",
+           {offsetof(struct BlockBasedTableOptions,
+                     data_block_hash_table_util_ratio),
+            OptionType::kDouble, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"checksum",
+           {offsetof(struct BlockBasedTableOptions, checksum),
+            OptionType::kChecksumType, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"no_block_cache",
+           {offsetof(struct BlockBasedTableOptions, no_block_cache),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"block_size",
+           {offsetof(struct BlockBasedTableOptions, block_size),
+            OptionType::kSizeT, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+          {"block_size_deviation",
+           {offsetof(struct BlockBasedTableOptions, block_size_deviation),
+            OptionType::kInt, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"block_restart_interval",
+           {offsetof(struct BlockBasedTableOptions, block_restart_interval),
+            OptionType::kInt, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+          {"index_block_restart_interval",
+           {offsetof(struct BlockBasedTableOptions,
+                     index_block_restart_interval),
+            OptionType::kInt, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"index_per_partition",
+           {0, OptionType::kUInt64T, OptionVerificationType::kDeprecated,
+            OptionTypeFlags::kNone}},
+          {"metadata_block_size",
+           {offsetof(struct BlockBasedTableOptions, metadata_block_size),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"partition_filters",
+           {offsetof(struct BlockBasedTableOptions, partition_filters),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"optimize_filters_for_memory",
+           {offsetof(struct BlockBasedTableOptions,
+                     optimize_filters_for_memory),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"use_delta_encoding",
+           {offsetof(struct BlockBasedTableOptions, use_delta_encoding),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"filter_policy",
+           OptionTypeInfo::AsCustomSharedPtr<const FilterPolicy>(
+               offsetof(struct BlockBasedTableOptions, filter_policy),
+               OptionVerificationType::kByNameAllowFromNull,
+               OptionTypeFlags::kNone)},
+          {"whole_key_filtering",
+           {offsetof(struct BlockBasedTableOptions, whole_key_filtering),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"detect_filter_construct_corruption",
+           {offsetof(struct BlockBasedTableOptions,
+                     detect_filter_construct_corruption),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+          {"reserve_table_builder_memory",
+           {0, OptionType::kBoolean, OptionVerificationType::kDeprecated,
+            OptionTypeFlags::kNone}},
+          {"reserve_table_reader_memory",
+           {0, OptionType::kBoolean, OptionVerificationType::kDeprecated,
+            OptionTypeFlags::kNone}},
+          {"skip_table_builder_flush",
+           {0, OptionType::kBoolean, OptionVerificationType::kDeprecated,
+            OptionTypeFlags::kNone}},
+          {"format_version",
+           {offsetof(struct BlockBasedTableOptions, format_version),
+            OptionType::kUInt32T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"verify_compression",
+           {offsetof(struct BlockBasedTableOptions, verify_compression),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"read_amp_bytes_per_bit",
+           {offsetof(struct BlockBasedTableOptions, read_amp_bytes_per_bit),
+            OptionType::kUInt32T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone,
+            [](const ConfigOptions& /*opts*/, const std::string& /*name*/,
+               const std::string& value, void* addr) {
+              // A workaround to fix a bug in 6.10, 6.11, 6.12, 6.13
+              // and 6.14. The bug will write out 8 bytes to OPTIONS file from
+              // the starting address of
+              // BlockBasedTableOptions.read_amp_bytes_per_bit which is actually
+              // a uint32. Consequently, the value of read_amp_bytes_per_bit
+              // written in the OPTIONS file is wrong. From 6.15, RocksDB will
+              // try to parse the read_amp_bytes_per_bit from OPTIONS file as a
+              // uint32. To be able to load OPTIONS file generated by affected
+              // releases before the fix, we need to manually parse
+              // read_amp_bytes_per_bit with this special hack.
+              uint64_t read_amp_bytes_per_bit = ParseUint64(value);
+              *(static_cast<uint32_t*>(addr)) =
+                  static_cast<uint32_t>(read_amp_bytes_per_bit);
+              return Status::OK();
+            }}},
+          {"enable_index_compression",
+           {offsetof(struct BlockBasedTableOptions, enable_index_compression),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"block_align",
+           {offsetof(struct BlockBasedTableOptions, block_align),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"pin_top_level_index_and_filter",
+           {offsetof(struct BlockBasedTableOptions,
+                     pin_top_level_index_and_filter),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {std::string(kOptNameMetadataCacheOpts),
+           OptionTypeInfo::Struct(
+               std::string(kOptNameMetadataCacheOpts), &GetMetadataCacheOptionsTypeInfo(),
+               offsetof(struct BlockBasedTableOptions, metadata_cache_options),
+               OptionVerificationType::kNormal, OptionTypeFlags::kNone)},
+          {"block_cache",
+           {offsetof(struct BlockBasedTableOptions, block_cache),
+            OptionType::kUnknown, OptionVerificationType::kNormal,
+            (OptionTypeFlags::kCompareNever | OptionTypeFlags::kDontSerialize),
+            // Parses the input value as a Cache
+            [](const ConfigOptions& opts, const std::string&,
+               const std::string& value, void* addr) {
+              auto* cache = static_cast<std::shared_ptr<Cache>*>(addr);
+              return Cache::CreateFromString(opts, value, cache);
+            }}},
+          {"block_cache_compressed",
+           {0, OptionType::kUnknown, OptionVerificationType::kDeprecated,
+            OptionTypeFlags::kNone}},
+          {"max_auto_readahead_size",
+           {offsetof(struct BlockBasedTableOptions, max_auto_readahead_size),
+            OptionType::kSizeT, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+          {"prepopulate_block_cache",
+           OptionTypeInfo::Enum<BlockBasedTableOptions::PrepopulateBlockCache>(
+               offsetof(struct BlockBasedTableOptions, prepopulate_block_cache),
+               &GetBlockBaseTablePrePopulateBlockCacheStringMap(),
+               OptionTypeFlags::kMutable)},
+          {"initial_auto_readahead_size",
+           {offsetof(struct BlockBasedTableOptions,
+                     initial_auto_readahead_size),
+            OptionType::kSizeT, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+          {"num_file_reads_for_auto_readahead",
+           {offsetof(struct BlockBasedTableOptions,
+                     num_file_reads_for_auto_readahead),
+            OptionType::kUInt64T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+
+      };
+  return block_based_table_type_info;
+}
 
 // TODO(myabandeh): We should return an error instead of silently changing the
 // options
@@ -420,7 +458,7 @@ BlockBasedTableFactory::BlockBasedTableFactory(
     const BlockBasedTableOptions& _table_options)
     : table_options_(_table_options) {
   InitializeOptions();
-  RegisterOptions(&table_options_, &block_based_table_type_info);
+  RegisterOptions(&table_options_, &GetBlockBasedTableTypeInfo());
 
   const auto table_reader_charged =
       table_options_.cache_usage_options.options_overrides
@@ -965,20 +1003,20 @@ TableFactory* NewBlockBasedTableFactory(
 }
 
 const std::string& GetHashIndexPrefixesBlock() {
-  const std::string kHashIndexPrefixesBlock = "rocksdb.hashindex.prefixes";
+  static const std::string kHashIndexPrefixesBlock = "rocksdb.hashindex.prefixes";
   return kHashIndexPrefixesBlock;
 }
 const std::string& GetHashIndexPrefixesMetadataBlock() {
-  const std::string kHashIndexPrefixesMetadataBlock =
+  static const std::string kHashIndexPrefixesMetadataBlock =
       "rocksdb.hashindex.metadata";
   return kHashIndexPrefixesMetadataBlock;
 }
 const std::string& GetPropTrue() {
-  const std::string kPropTrue = "1";
+  static const std::string kPropTrue = "1";
   return kPropTrue;
 }
 const std::string& GetPropFalse() {
-  const std::string kPropFalse = "0";
+  static const std::string kPropFalse = "0";
   return kPropFalse;
 }
 

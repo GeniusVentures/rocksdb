@@ -226,15 +226,19 @@ IOStatus ReadFileToString(FileSystem* fs, const std::string& fname,
 }
 
 namespace {
-static std::unordered_map<std::string, OptionTypeInfo> fs_wrapper_type_info = {
-    {"target",
-     OptionTypeInfo::AsCustomSharedPtr<FileSystem>(
-         0, OptionVerificationType::kByName, OptionTypeFlags::kDontSerialize)},
-};
+static std::unordered_map<std::string, OptionTypeInfo>& GetFSWrapperTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> fs_wrapper_type_info =
+      {
+          {"target", OptionTypeInfo::AsCustomSharedPtr<FileSystem>(
+                         0, OptionVerificationType::kByName,
+                         OptionTypeFlags::kDontSerialize)},
+      };
+  return fs_wrapper_type_info;
+}
 }  // namespace
 FileSystemWrapper::FileSystemWrapper(const std::shared_ptr<FileSystem>& t)
     : target_(t) {
-  RegisterOptions("", &target_, &fs_wrapper_type_info);
+  RegisterOptions("", &target_, &GetFSWrapperTypeInfo());
 }
 
 Status FileSystemWrapper::PrepareOptions(const ConfigOptions& options) {

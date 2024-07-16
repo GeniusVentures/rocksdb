@@ -44,18 +44,24 @@ class StringLogger : public Logger {
  private:
   std::string string_;
 };
-static std::unordered_map<std::string, OptionTypeInfo> struct_option_info = {
-    {"struct", OptionTypeInfo::Struct("struct", &simple_option_info, 0,
-                                      OptionVerificationType::kNormal,
-                                      OptionTypeFlags::kMutable)},
-};
-
-static std::unordered_map<std::string, OptionTypeInfo> imm_struct_option_info =
-    {
-        {"struct", OptionTypeInfo::Struct("struct", &simple_option_info, 0,
-                                          OptionVerificationType::kNormal,
-                                          OptionTypeFlags::kNone)},
-};
+static std::unordered_map<std::string, OptionTypeInfo>& GetStructOptionInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> struct_option_info = {
+      {"struct", OptionTypeInfo::Struct("struct", &simple_option_info, 0,
+                                        OptionVerificationType::kNormal,
+                                        OptionTypeFlags::kMutable)},
+  };
+  return struct_option_info;
+}
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetIMMStructOptionInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      imm_struct_option_info = {
+          {"struct", OptionTypeInfo::Struct("struct", &simple_option_info, 0,
+                                            OptionVerificationType::kNormal,
+                                            OptionTypeFlags::kNone)},
+      };
+  return imm_struct_option_info;
+}
 
 class SimpleConfigurable : public TestConfigurable<Configurable> {
  public:
@@ -205,24 +211,37 @@ TEST_F(ConfigurableTest, InvalidOptionTest) {
   ASSERT_NOK(
       configurable->ConfigureOption(config_options_, "bad-option", "bad"));
 }
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetValidatedOptionInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> validated_option_info =
+      {
+          {"validated",
+           {0, OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+      };
+  return validated_option_info;
+}
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetPreparedOptionInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> prepared_option_info =
+      {
+          {"prepared",
+           {0, OptionType::kInt, OptionVerificationType::kNormal,
+            OptionTypeFlags::kMutable}},
+      };
+  return prepared_option_info;
+}
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetDontPrepareOptionInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      dont_prepare_option_info = {
+          {"unique",
+           {0, OptionType::kConfigurable, OptionVerificationType::kNormal,
+            (OptionTypeFlags::kUnique | OptionTypeFlags::kDontPrepare)}},
 
-static std::unordered_map<std::string, OptionTypeInfo> validated_option_info = {
-    {"validated",
-     {0, OptionType::kBoolean, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-};
-static std::unordered_map<std::string, OptionTypeInfo> prepared_option_info = {
-    {"prepared",
-     {0, OptionType::kInt, OptionVerificationType::kNormal,
-      OptionTypeFlags::kMutable}},
-};
-static std::unordered_map<std::string, OptionTypeInfo>
-    dont_prepare_option_info = {
-        {"unique",
-         {0, OptionType::kConfigurable, OptionVerificationType::kNormal,
-          (OptionTypeFlags::kUnique | OptionTypeFlags::kDontPrepare)}},
-
-};
+      };
+  return dont_prepare_option_info;
+}
 
 class ValidatedConfigurable : public SimpleConfigurable {
  public:
@@ -231,13 +250,14 @@ class ValidatedConfigurable : public SimpleConfigurable {
       : SimpleConfigurable(name, TestConfigMode::kDefaultMode),
         validated(false),
         prepared(0) {
-    RegisterOptions("Validated", &validated, &validated_option_info);
-    RegisterOptions("Prepared", &prepared, &prepared_option_info);
+    RegisterOptions("Validated", &validated, &GetValidatedOptionInfo());
+    RegisterOptions("Prepared", &prepared, &GetPreparedOptionInfo());
     if ((mode & TestConfigMode::kUniqueMode) != 0) {
       unique_.reset(new ValidatedConfigurable(
           "Unique" + name_, TestConfigMode::kDefaultMode, false));
       if (dont_prepare) {
-        RegisterOptions(name_ + "Unique", &unique_, &dont_prepare_option_info);
+        RegisterOptions(name_ + "Unique", &unique_,
+                        &GetDontPrepareOptionInfo());
       } else {
         RegisterOptions(name_ + "Unique", &unique_, &unique_option_info);
       }
@@ -362,7 +382,7 @@ TEST_F(ConfigurableTest, MutableOptionsTest) {
         : SimpleConfigurable("mutable", TestConfigMode::kDefaultMode |
                                             TestConfigMode::kUniqueMode |
                                             TestConfigMode::kSharedMode) {
-      RegisterOptions("struct", &options_, &struct_option_info);
+      RegisterOptions("struct", &options_, &GetStructOptionInfo());
       RegisterOptions("imm", &options_, &imm_option_info);
     }
   };
@@ -542,7 +562,7 @@ TEST_F(ConfigurableTest, MatchesTest) {
 
 static Configurable* SimpleStructFactory() {
   return SimpleConfigurable::Create(
-      "simple-struct", TestConfigMode::kDefaultMode, &struct_option_info);
+      "simple-struct", TestConfigMode::kDefaultMode, &GetStructOptionInfo());
 }
 
 TEST_F(ConfigurableTest, ConfigureStructTest) {
@@ -592,17 +612,21 @@ TEST_F(ConfigurableTest, ConfigurableEnumTest) {
   ASSERT_NOK(base->ConfigureOption(config_options_, "unknown", "bad"));
 }
 
-static std::unordered_map<std::string, OptionTypeInfo> noserialize_option_info =
-    {
-        {"int",
-         {offsetof(struct TestOptions, i), OptionType::kInt,
-          OptionVerificationType::kNormal, OptionTypeFlags::kDontSerialize}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetNoSerializeOptionInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      noserialize_option_info = {
+          {"int",
+           {offsetof(struct TestOptions, i), OptionType::kInt,
+            OptionVerificationType::kNormal, OptionTypeFlags::kDontSerialize}},
+      };
+  return noserialize_option_info;
+}
 
 TEST_F(ConfigurableTest, TestNoSerialize) {
   std::unique_ptr<Configurable> base;
   base.reset(SimpleConfigurable::Create("c", TestConfigMode::kDefaultMode,
-                                        &noserialize_option_info));
+                                        &GetNoSerializeOptionInfo()));
   std::string opts_str, value;
   ASSERT_OK(base->ConfigureFromString(config_options_, "int=10"));
   ASSERT_OK(base->GetOptionString(config_options_, &opts_str));

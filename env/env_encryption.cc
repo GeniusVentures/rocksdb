@@ -3,7 +3,6 @@
 //  COPYING file in the root directory) and Apache 2.0 License
 //  (found in the LICENSE.Apache file in the root directory).
 
-
 #include "rocksdb/env_encryption.h"
 
 #include <algorithm>
@@ -334,13 +333,17 @@ IOStatus EncryptedRandomRWFile::Close(const IOOptions& options,
 }
 
 namespace {
-static std::unordered_map<std::string, OptionTypeInfo> encrypted_fs_type_info =
-    {
-        {"provider",
-         OptionTypeInfo::AsCustomSharedPtr<EncryptionProvider>(
-             0 /* No offset, whole struct*/, OptionVerificationType::kByName,
-             OptionTypeFlags::kNone)},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetEncryptedFSTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      encrypted_fs_type_info = {
+          {"provider",
+           OptionTypeInfo::AsCustomSharedPtr<EncryptionProvider>(
+               0 /* No offset, whole struct*/, OptionVerificationType::kByName,
+               OptionTypeFlags::kNone)},
+      };
+  return encrypted_fs_type_info;
+}
 // EncryptedFileSystemImpl implements an FileSystemWrapper that adds encryption
 // to files stored on disk.
 class EncryptedFileSystemImpl : public EncryptedFileSystem {
@@ -569,7 +572,8 @@ class EncryptedFileSystemImpl : public EncryptedFileSystem {
                           const std::shared_ptr<EncryptionProvider>& provider)
       : EncryptedFileSystem(base) {
     provider_ = provider;
-    RegisterOptions("EncryptionProvider", &provider_, &encrypted_fs_type_info);
+    RegisterOptions("EncryptionProvider", &provider_,
+                    &GetEncryptedFSTypeInfo());
   }
 
   Status AddCipher(const std::string& descriptor, const char* cipher,
@@ -912,12 +916,16 @@ Status BlockAccessCipherStream::Decrypt(uint64_t fileOffset, char* data,
 }
 
 namespace {
-static std::unordered_map<std::string, OptionTypeInfo>
-    rot13_block_cipher_type_info = {
-        {"block_size",
-         {0 /* No offset, whole struct*/, OptionType::kInt,
-          OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetROT13BlockCipherTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      rot13_block_cipher_type_info = {
+          {"block_size",
+           {0 /* No offset, whole struct*/, OptionType::kInt,
+            OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
+      };
+  return rot13_block_cipher_type_info;
+}
 
 // Implements a BlockCipher using ROT13.
 //
@@ -930,7 +938,7 @@ class ROT13BlockCipher : public BlockCipher {
  public:
   explicit ROT13BlockCipher(size_t blockSize) : blockSize_(blockSize) {
     RegisterOptions("ROT13BlockCipherOptions", &blockSize_,
-                    &rot13_block_cipher_type_info);
+                    &GetROT13BlockCipherTypeInfo());
   }
 
   static const char* kClassName() { return "ROT13"; }
@@ -1187,6 +1195,5 @@ Status EncryptionProvider::CreateFromString(
   RegisterEncryptionBuiltins();
   return LoadSharedObject<EncryptionProvider>(config_options, value, result);
 }
-
 
 }  // namespace ROCKSDB_NAMESPACE

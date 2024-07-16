@@ -98,33 +98,37 @@ CompactForTieringCollectorFactory::CreateTablePropertiesCollector(
       compaction_trigger_ratio);
 }
 
-static std::unordered_map<std::string, OptionTypeInfo>
-    on_compact_for_tiering_type_info = {
-        {"compaction_trigger_ratio",
-         {0, OptionType::kUnknown, OptionVerificationType::kNormal,
-          OptionTypeFlags::kCompareNever | OptionTypeFlags::kMutable,
-          [](const ConfigOptions&, const std::string&, const std::string& value,
-             void* addr) {
-            auto* factory =
-                static_cast<CompactForTieringCollectorFactory*>(addr);
-            factory->SetCompactionTriggerRatio(ParseDouble(value));
-            return Status::OK();
-          },
-          [](const ConfigOptions&, const std::string&, const void* addr,
-             std::string* value) {
-            const auto* factory =
-                static_cast<const CompactForTieringCollectorFactory*>(addr);
-            *value = std::to_string(factory->GetCompactionTriggerRatio());
-            return Status::OK();
-          },
-          nullptr}},
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetONCompactForTieringTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      on_compact_for_tiering_type_info = {
+          {"compaction_trigger_ratio",
+           {0, OptionType::kUnknown, OptionVerificationType::kNormal,
+            OptionTypeFlags::kCompareNever | OptionTypeFlags::kMutable,
+            [](const ConfigOptions&, const std::string&,
+               const std::string& value, void* addr) {
+              auto* factory =
+                  static_cast<CompactForTieringCollectorFactory*>(addr);
+              factory->SetCompactionTriggerRatio(ParseDouble(value));
+              return Status::OK();
+            },
+            [](const ConfigOptions&, const std::string&, const void* addr,
+               std::string* value) {
+              const auto* factory =
+                  static_cast<const CompactForTieringCollectorFactory*>(addr);
+              *value = std::to_string(factory->GetCompactionTriggerRatio());
+              return Status::OK();
+            },
+            nullptr}},
 
-};
+      };
+  return on_compact_for_tiering_type_info;
+}
 
 CompactForTieringCollectorFactory::CompactForTieringCollectorFactory(
     double compaction_trigger_ratio)
     : compaction_trigger_ratio_(compaction_trigger_ratio) {
-  RegisterOptions("", this, &on_compact_for_tiering_type_info);
+  RegisterOptions("", this, &GetONCompactForTieringTypeInfo());
 }
 
 std::string CompactForTieringCollectorFactory::ToString() const {

@@ -63,34 +63,37 @@ std::string CuckooTableFactory::GetPrintableOptions() const {
   ret.append(buffer);
   return ret;
 }
-
-static std::unordered_map<std::string, OptionTypeInfo> cuckoo_table_type_info =
-    {
-        {"hash_table_ratio",
-         {offsetof(struct CuckooTableOptions, hash_table_ratio),
-          OptionType::kDouble, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"max_search_depth",
-         {offsetof(struct CuckooTableOptions, max_search_depth),
-          OptionType::kUInt32T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"cuckoo_block_size",
-         {offsetof(struct CuckooTableOptions, cuckoo_block_size),
-          OptionType::kUInt32T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"identity_as_first_hash",
-         {offsetof(struct CuckooTableOptions, identity_as_first_hash),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"use_module_hash",
-         {offsetof(struct CuckooTableOptions, use_module_hash),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetCuckooTableTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      cuckoo_table_type_info = {
+          {"hash_table_ratio",
+           {offsetof(struct CuckooTableOptions, hash_table_ratio),
+            OptionType::kDouble, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"max_search_depth",
+           {offsetof(struct CuckooTableOptions, max_search_depth),
+            OptionType::kUInt32T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"cuckoo_block_size",
+           {offsetof(struct CuckooTableOptions, cuckoo_block_size),
+            OptionType::kUInt32T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"identity_as_first_hash",
+           {offsetof(struct CuckooTableOptions, identity_as_first_hash),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"use_module_hash",
+           {offsetof(struct CuckooTableOptions, use_module_hash),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+      };
+  return cuckoo_table_type_info;
+}
 
 CuckooTableFactory::CuckooTableFactory(const CuckooTableOptions& table_options)
     : table_options_(table_options) {
-  RegisterOptions(&table_options_, &cuckoo_table_type_info);
+  RegisterOptions(&table_options_, &GetCuckooTableTypeInfo());
 }
 
 TableFactory* NewCuckooTableFactory(const CuckooTableOptions& table_options) {

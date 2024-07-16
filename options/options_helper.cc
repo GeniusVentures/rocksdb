@@ -1082,7 +1082,7 @@ Status OptionTypeInfo::Serialize(const ConfigOptions& config_options,
       // printed). Otherwise, we return the "nullptr" string, which will result
       // in "option=nullptr" being printed.
       if (IsMutable() || !config_options.mutable_options_only) {
-        *opt_value = kNullptrString;
+        *opt_value = GetNullptrString();
       } else {
         *opt_value = "";
       }
@@ -1419,11 +1419,11 @@ bool OptionTypeInfo::AreEqualByName(const ConfigOptions& config_options,
   } else if (!Serialize(config_options, opt_name, opt_ptr, &this_value).ok()) {
     return false;
   } else if (IsEnabled(OptionVerificationType::kByNameAllowFromNull)) {
-    if (that_value == kNullptrString) {
+    if (that_value == GetNullptrString()) {
       return true;
     }
   } else if (IsEnabled(OptionVerificationType::kByNameAllowNull)) {
-    if (that_value == kNullptrString) {
+    if (that_value == GetNullptrString()) {
       return true;
     }
   }

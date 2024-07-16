@@ -3,50 +3,52 @@
 //  COPYING file in the root directory) and Apache 2.0 License
 //  (found in the LICENSE.Apache file in the root directory).
 
-
 #include "rocksdb/utilities/debug.h"
 
 #include "db/db_impl/db_impl.h"
 #include "rocksdb/utilities/options_type.h"
 
 namespace ROCKSDB_NAMESPACE {
-
-static std::unordered_map<std::string, ValueType> value_type_string_map = {
-    {"TypeDeletion", ValueType::kTypeDeletion},
-    {"TypeValue", ValueType::kTypeValue},
-    {"TypeMerge", ValueType::kTypeMerge},
-    {"TypeLogData", ValueType::kTypeLogData},
-    {"TypeColumnFamilyDeletion", ValueType::kTypeColumnFamilyDeletion},
-    {"TypeColumnFamilyValue", ValueType::kTypeColumnFamilyValue},
-    {"TypeColumnFamilyMerge", ValueType::kTypeColumnFamilyMerge},
-    {"TypeSingleDeletion", ValueType::kTypeSingleDeletion},
-    {"TypeColumnFamilySingleDeletion",
-     ValueType::kTypeColumnFamilySingleDeletion},
-    {"TypeBeginPrepareXID", ValueType::kTypeBeginPrepareXID},
-    {"TypeEndPrepareXID", ValueType::kTypeEndPrepareXID},
-    {"TypeCommitXID", ValueType::kTypeCommitXID},
-    {"TypeRollbackXID", ValueType::kTypeRollbackXID},
-    {"TypeNoop", ValueType::kTypeNoop},
-    {"TypeColumnFamilyRangeDeletion",
-     ValueType::kTypeColumnFamilyRangeDeletion},
-    {"TypeRangeDeletion", ValueType::kTypeRangeDeletion},
-    {"TypeColumnFamilyBlobIndex", ValueType::kTypeColumnFamilyBlobIndex},
-    {"TypeBlobIndex", ValueType::kTypeBlobIndex},
-    {"TypeBeginPersistedPrepareXID", ValueType::kTypeBeginPersistedPrepareXID},
-    {"TypeBeginUnprepareXID", ValueType::kTypeBeginUnprepareXID},
-    {"TypeDeletionWithTimestamp", ValueType::kTypeDeletionWithTimestamp},
-    {"TypeCommitXIDAndTimestamp", ValueType::kTypeCommitXIDAndTimestamp},
-    {"TypeWideColumnEntity", ValueType::kTypeWideColumnEntity},
-    {"TypeColumnFamilyWideColumnEntity",
-     ValueType::kTypeColumnFamilyWideColumnEntity},
-    {"TypeValuePreferredSeqno", ValueType::kTypeValuePreferredSeqno},
-    {"TypeColumnFamilyValuePreferredSeqno",
-     ValueType::kTypeColumnFamilyValuePreferredSeqno},
-};
+static std::unordered_map<std::string, ValueType>& GetValueTypeStringMap() {
+  static std::unordered_map<std::string, ValueType> value_type_string_map = {
+      {"TypeDeletion", ValueType::kTypeDeletion},
+      {"TypeValue", ValueType::kTypeValue},
+      {"TypeMerge", ValueType::kTypeMerge},
+      {"TypeLogData", ValueType::kTypeLogData},
+      {"TypeColumnFamilyDeletion", ValueType::kTypeColumnFamilyDeletion},
+      {"TypeColumnFamilyValue", ValueType::kTypeColumnFamilyValue},
+      {"TypeColumnFamilyMerge", ValueType::kTypeColumnFamilyMerge},
+      {"TypeSingleDeletion", ValueType::kTypeSingleDeletion},
+      {"TypeColumnFamilySingleDeletion",
+       ValueType::kTypeColumnFamilySingleDeletion},
+      {"TypeBeginPrepareXID", ValueType::kTypeBeginPrepareXID},
+      {"TypeEndPrepareXID", ValueType::kTypeEndPrepareXID},
+      {"TypeCommitXID", ValueType::kTypeCommitXID},
+      {"TypeRollbackXID", ValueType::kTypeRollbackXID},
+      {"TypeNoop", ValueType::kTypeNoop},
+      {"TypeColumnFamilyRangeDeletion",
+       ValueType::kTypeColumnFamilyRangeDeletion},
+      {"TypeRangeDeletion", ValueType::kTypeRangeDeletion},
+      {"TypeColumnFamilyBlobIndex", ValueType::kTypeColumnFamilyBlobIndex},
+      {"TypeBlobIndex", ValueType::kTypeBlobIndex},
+      {"TypeBeginPersistedPrepareXID",
+       ValueType::kTypeBeginPersistedPrepareXID},
+      {"TypeBeginUnprepareXID", ValueType::kTypeBeginUnprepareXID},
+      {"TypeDeletionWithTimestamp", ValueType::kTypeDeletionWithTimestamp},
+      {"TypeCommitXIDAndTimestamp", ValueType::kTypeCommitXIDAndTimestamp},
+      {"TypeWideColumnEntity", ValueType::kTypeWideColumnEntity},
+      {"TypeColumnFamilyWideColumnEntity",
+       ValueType::kTypeColumnFamilyWideColumnEntity},
+      {"TypeValuePreferredSeqno", ValueType::kTypeValuePreferredSeqno},
+      {"TypeColumnFamilyValuePreferredSeqno",
+       ValueType::kTypeColumnFamilyValuePreferredSeqno},
+  };
+  return value_type_string_map;
+}
 
 std::string KeyVersion::GetTypeName() const {
   std::string type_name;
-  if (SerializeEnum<ValueType>(value_type_string_map,
+  if (SerializeEnum<ValueType>(GetValueTypeStringMap(),
                                static_cast<ValueType>(type), &type_name)) {
     return type_name;
   } else {
@@ -131,4 +133,3 @@ Status GetAllKeyVersions(DB* db, ColumnFamilyHandle* cfh, Slice begin_key,
 }
 
 }  // namespace ROCKSDB_NAMESPACE
-

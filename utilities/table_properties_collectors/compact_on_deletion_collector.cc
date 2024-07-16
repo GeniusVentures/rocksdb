@@ -97,71 +97,75 @@ Status CompactOnDeletionCollector::Finish(
   finished_ = true;
   return Status::OK();
 }
-static std::unordered_map<std::string, OptionTypeInfo>
-    on_deletion_collector_type_info = {
-        {"window_size",
-         {0, OptionType::kUnknown, OptionVerificationType::kNormal,
-          OptionTypeFlags::kCompareNever | OptionTypeFlags::kMutable,
-          [](const ConfigOptions&, const std::string&, const std::string& value,
-             void* addr) {
-            auto* factory =
-                static_cast<CompactOnDeletionCollectorFactory*>(addr);
-            factory->SetWindowSize(ParseSizeT(value));
-            return Status::OK();
-          },
-          [](const ConfigOptions&, const std::string&, const void* addr,
-             std::string* value) {
-            const auto* factory =
-                static_cast<const CompactOnDeletionCollectorFactory*>(addr);
-            *value = std::to_string(factory->GetWindowSize());
-            return Status::OK();
-          },
-          nullptr}},
-        {"deletion_trigger",
-         {0, OptionType::kUnknown, OptionVerificationType::kNormal,
-          OptionTypeFlags::kCompareNever | OptionTypeFlags::kMutable,
-          [](const ConfigOptions&, const std::string&, const std::string& value,
-             void* addr) {
-            auto* factory =
-                static_cast<CompactOnDeletionCollectorFactory*>(addr);
-            factory->SetDeletionTrigger(ParseSizeT(value));
-            return Status::OK();
-          },
-          [](const ConfigOptions&, const std::string&, const void* addr,
-             std::string* value) {
-            const auto* factory =
-                static_cast<const CompactOnDeletionCollectorFactory*>(addr);
-            *value = std::to_string(factory->GetDeletionTrigger());
-            return Status::OK();
-          },
-          nullptr}},
-        {"deletion_ratio",
-         {0, OptionType::kUnknown, OptionVerificationType::kNormal,
-          OptionTypeFlags::kCompareNever | OptionTypeFlags::kMutable,
-          [](const ConfigOptions&, const std::string&, const std::string& value,
-             void* addr) {
-            auto* factory =
-                static_cast<CompactOnDeletionCollectorFactory*>(addr);
-            factory->SetDeletionRatio(ParseDouble(value));
-            return Status::OK();
-          },
-          [](const ConfigOptions&, const std::string&, const void* addr,
-             std::string* value) {
-            const auto* factory =
-                static_cast<const CompactOnDeletionCollectorFactory*>(addr);
-            *value = std::to_string(factory->GetDeletionRatio());
-            return Status::OK();
-          },
-          nullptr}},
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetOnDeletionCollectorTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      on_deletion_collector_type_info = {
+          {"window_size",
+           {0, OptionType::kUnknown, OptionVerificationType::kNormal,
+            OptionTypeFlags::kCompareNever | OptionTypeFlags::kMutable,
+            [](const ConfigOptions&, const std::string&,
+               const std::string& value, void* addr) {
+              auto* factory =
+                  static_cast<CompactOnDeletionCollectorFactory*>(addr);
+              factory->SetWindowSize(ParseSizeT(value));
+              return Status::OK();
+            },
+            [](const ConfigOptions&, const std::string&, const void* addr,
+               std::string* value) {
+              const auto* factory =
+                  static_cast<const CompactOnDeletionCollectorFactory*>(addr);
+              *value = std::to_string(factory->GetWindowSize());
+              return Status::OK();
+            },
+            nullptr}},
+          {"deletion_trigger",
+           {0, OptionType::kUnknown, OptionVerificationType::kNormal,
+            OptionTypeFlags::kCompareNever | OptionTypeFlags::kMutable,
+            [](const ConfigOptions&, const std::string&,
+               const std::string& value, void* addr) {
+              auto* factory =
+                  static_cast<CompactOnDeletionCollectorFactory*>(addr);
+              factory->SetDeletionTrigger(ParseSizeT(value));
+              return Status::OK();
+            },
+            [](const ConfigOptions&, const std::string&, const void* addr,
+               std::string* value) {
+              const auto* factory =
+                  static_cast<const CompactOnDeletionCollectorFactory*>(addr);
+              *value = std::to_string(factory->GetDeletionTrigger());
+              return Status::OK();
+            },
+            nullptr}},
+          {"deletion_ratio",
+           {0, OptionType::kUnknown, OptionVerificationType::kNormal,
+            OptionTypeFlags::kCompareNever | OptionTypeFlags::kMutable,
+            [](const ConfigOptions&, const std::string&,
+               const std::string& value, void* addr) {
+              auto* factory =
+                  static_cast<CompactOnDeletionCollectorFactory*>(addr);
+              factory->SetDeletionRatio(ParseDouble(value));
+              return Status::OK();
+            },
+            [](const ConfigOptions&, const std::string&, const void* addr,
+               std::string* value) {
+              const auto* factory =
+                  static_cast<const CompactOnDeletionCollectorFactory*>(addr);
+              *value = std::to_string(factory->GetDeletionRatio());
+              return Status::OK();
+            },
+            nullptr}},
 
-};
+      };
+  return on_deletion_collector_type_info;
+}
 
 CompactOnDeletionCollectorFactory::CompactOnDeletionCollectorFactory(
     size_t sliding_window_size, size_t deletion_trigger, double deletion_ratio)
     : sliding_window_size_(sliding_window_size),
       deletion_trigger_(deletion_trigger),
       deletion_ratio_(deletion_ratio) {
-  RegisterOptions("", this, &on_deletion_collector_type_info);
+  RegisterOptions("", this, &GetOnDeletionCollectorTypeInfo());
 }
 
 TablePropertiesCollector*

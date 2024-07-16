@@ -36,7 +36,10 @@
 
 namespace ROCKSDB_NAMESPACE {
 
-const std::string kNullptrString = "nullptr";
+const std::string& GetNullptrString() {
+  static const std::string kNullptrString = "nullptr";
+  return kNullptrString;
+}
 
 std::vector<std::string> StringSplit(const std::string& arg, char delim) {
   std::vector<std::string> splits;
@@ -296,7 +299,6 @@ bool StartsWith(const std::string& string, const std::string& pattern) {
   return string.compare(0, pattern.size(), pattern) == 0;
 }
 
-
 bool ParseBoolean(const std::string& type, const std::string& value) {
   if (value == "true" || value == "1") {
     return true;
@@ -333,7 +335,6 @@ int32_t ParseInt32(const std::string& value) {
     throw std::out_of_range(value);
   }
 }
-
 
 uint64_t ParseUint64(const std::string& value) {
   size_t endchar;

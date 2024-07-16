@@ -605,6 +605,7 @@ class LegacyFileSystemWrapper : public FileSystem {
     // would be part of the Env.  As such, do not serialize it here.
     return "";
   }
+
  private:
   Env* target_;
 };
@@ -1172,16 +1173,20 @@ const std::shared_ptr<SystemClock>& Env::GetSystemClock() const {
   return system_clock_;
 }
 namespace {
-static std::unordered_map<std::string, OptionTypeInfo> sc_wrapper_type_info = {
-    {"target",
-     OptionTypeInfo::AsCustomSharedPtr<SystemClock>(
-         0, OptionVerificationType::kByName, OptionTypeFlags::kDontSerialize)},
-};
+static std::unordered_map<std::string, OptionTypeInfo>& GetSCWrapperTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> sc_wrapper_type_info =
+      {
+          {"target", OptionTypeInfo::AsCustomSharedPtr<SystemClock>(
+                         0, OptionVerificationType::kByName,
+                         OptionTypeFlags::kDontSerialize)},
+      };
+  return sc_wrapper_type_info;
+}
 
 }  // namespace
 SystemClockWrapper::SystemClockWrapper(const std::shared_ptr<SystemClock>& t)
     : target_(t) {
-  RegisterOptions("", &target_, &sc_wrapper_type_info);
+  RegisterOptions("", &target_, &GetSCWrapperTypeInfo());
 }
 
 Status SystemClockWrapper::PrepareOptions(const ConfigOptions& options) {

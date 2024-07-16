@@ -689,7 +689,7 @@ Status Configurable::GetOptionsMap(
   assert(id);
   assert(props);
   Status status;
-  if (value.empty() || value == kNullptrString) {
+  if (value.empty() || value == GetNullptrString()) {
     *id = default_id;
   } else if (value.find('=') == std::string::npos) {
     *id = value;
@@ -704,7 +704,7 @@ Status Configurable::GetOptionsMap(
       if (iter != props->end()) {
         *id = iter->second;
         props->erase(iter);
-        if (*id == kNullptrString) {
+        if (*id == GetNullptrString()) {
           id->clear();
         }
       } else if (!default_id.empty()) {

@@ -4,7 +4,6 @@
 //  (found in the LICENSE.Apache file in the root directory).
 //
 
-
 #include <algorithm>
 #include <atomic>
 
@@ -847,28 +846,32 @@ struct HashLinkListRepOptions {
   int bucket_entries_logging_threshold;
   bool if_log_bucket_dist_when_flash;
 };
-
-static std::unordered_map<std::string, OptionTypeInfo> hash_linklist_info = {
-    {"bucket_count",
-     {offsetof(struct HashLinkListRepOptions, bucket_count), OptionType::kSizeT,
-      OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
-    {"threshold",
-     {offsetof(struct HashLinkListRepOptions, threshold_use_skiplist),
-      OptionType::kUInt32T, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-    {"huge_page_size",
-     {offsetof(struct HashLinkListRepOptions, huge_page_tlb_size),
-      OptionType::kSizeT, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-    {"logging_threshold",
-     {offsetof(struct HashLinkListRepOptions, bucket_entries_logging_threshold),
-      OptionType::kInt, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-    {"log_when_flash",
-     {offsetof(struct HashLinkListRepOptions, if_log_bucket_dist_when_flash),
-      OptionType::kBoolean, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>& GetHashLinkListInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> hash_linklist_info = {
+      {"bucket_count",
+       {offsetof(struct HashLinkListRepOptions, bucket_count),
+        OptionType::kSizeT, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"threshold",
+       {offsetof(struct HashLinkListRepOptions, threshold_use_skiplist),
+        OptionType::kUInt32T, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"huge_page_size",
+       {offsetof(struct HashLinkListRepOptions, huge_page_tlb_size),
+        OptionType::kSizeT, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"logging_threshold",
+       {offsetof(struct HashLinkListRepOptions,
+                 bucket_entries_logging_threshold),
+        OptionType::kInt, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"log_when_flash",
+       {offsetof(struct HashLinkListRepOptions, if_log_bucket_dist_when_flash),
+        OptionType::kBoolean, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+  };
+  return hash_linklist_info;
+}
 
 class HashLinkListRepFactory : public MemTableRepFactory {
  public:
@@ -883,7 +886,7 @@ class HashLinkListRepFactory : public MemTableRepFactory {
     options_.bucket_entries_logging_threshold =
         bucket_entries_logging_threshold;
     options_.if_log_bucket_dist_when_flash = if_log_bucket_dist_when_flash;
-    RegisterOptions(&options_, &hash_linklist_info);
+    RegisterOptions(&options_, &GetHashLinkListInfo());
   }
 
   using MemTableRepFactory::CreateMemTableRep;

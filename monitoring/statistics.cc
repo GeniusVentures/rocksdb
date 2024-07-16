@@ -364,23 +364,25 @@ Status Statistics::CreateFromString(const ConfigOptions& config_options,
   Status s;
   if (id == "" || id == StatisticsImpl::kClassName()) {
     result->reset(new StatisticsImpl(nullptr));
-  } else if (id == kNullptrString) {
+  } else if (id == GetNullptrString()) {
     result->reset();
   } else {
     s = LoadSharedObject<Statistics>(config_options, id, result);
   }
   return s;
 }
-
-static std::unordered_map<std::string, OptionTypeInfo> stats_type_info = {
-    {"inner", OptionTypeInfo::AsCustomSharedPtr<Statistics>(
-                  0, OptionVerificationType::kByNameAllowFromNull,
-                  OptionTypeFlags::kCompareNever)},
-};
+static std::unordered_map<std::string, OptionTypeInfo>& GetStatsTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> stats_type_info = {
+      {"inner", OptionTypeInfo::AsCustomSharedPtr<Statistics>(
+                    0, OptionVerificationType::kByNameAllowFromNull,
+                    OptionTypeFlags::kCompareNever)},
+  };
+  return stats_type_info;
+}
 
 StatisticsImpl::StatisticsImpl(std::shared_ptr<Statistics> stats)
     : stats_(std::move(stats)) {
-  RegisterOptions("StatisticsOptions", &stats_, &stats_type_info);
+  RegisterOptions("StatisticsOptions", &stats_, &GetStatsTypeInfo());
 }
 
 StatisticsImpl::~StatisticsImpl() = default;

@@ -32,42 +32,52 @@ int64_t MaybeCurrentTime(const std::shared_ptr<SystemClock>& clock) {
   return time;
 }
 
-static std::unordered_map<std::string, OptionTypeInfo> time_elapse_type_info = {
-    {"time_elapse_only_sleep",
-     {0, OptionType::kBoolean, OptionVerificationType::kNormal,
-      OptionTypeFlags::kCompareNever,
-      [](const ConfigOptions& /*opts*/, const std::string& /*name*/,
-         const std::string& value, void* addr) {
-        auto clock = static_cast<EmulatedSystemClock*>(addr);
-        clock->SetTimeElapseOnlySleep(ParseBoolean("", value));
-        return Status::OK();
-      },
-      [](const ConfigOptions& /*opts*/, const std::string& /*name*/,
-         const void* addr, std::string* value) {
-        const auto clock = static_cast<const EmulatedSystemClock*>(addr);
-        *value = clock->IsTimeElapseOnlySleep() ? "true" : "false";
-        return Status::OK();
-      },
-      nullptr}},
-};
-static std::unordered_map<std::string, OptionTypeInfo> mock_sleep_type_info = {
-    {"mock_sleep",
-     {0, OptionType::kBoolean, OptionVerificationType::kNormal,
-      OptionTypeFlags::kCompareNever,
-      [](const ConfigOptions& /*opts*/, const std::string& /*name*/,
-         const std::string& value, void* addr) {
-        auto clock = static_cast<EmulatedSystemClock*>(addr);
-        clock->SetMockSleep(ParseBoolean("", value));
-        return Status::OK();
-      },
-      [](const ConfigOptions& /*opts*/, const std::string& /*name*/,
-         const void* addr, std::string* value) {
-        const auto clock = static_cast<const EmulatedSystemClock*>(addr);
-        *value = clock->IsMockSleepEnabled() ? "true" : "false";
-        return Status::OK();
-      },
-      nullptr}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetTimeElapseTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> time_elapse_type_info =
+      {
+          {"time_elapse_only_sleep",
+           {0, OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kCompareNever,
+            [](const ConfigOptions& /*opts*/, const std::string& /*name*/,
+               const std::string& value, void* addr) {
+              auto clock = static_cast<EmulatedSystemClock*>(addr);
+              clock->SetTimeElapseOnlySleep(ParseBoolean("", value));
+              return Status::OK();
+            },
+            [](const ConfigOptions& /*opts*/, const std::string& /*name*/,
+               const void* addr, std::string* value) {
+              const auto clock = static_cast<const EmulatedSystemClock*>(addr);
+              *value = clock->IsTimeElapseOnlySleep() ? "true" : "false";
+              return Status::OK();
+            },
+            nullptr}},
+      };
+
+  return time_elapse_type_info;
+}
+static std::unordered_map<std::string, OptionTypeInfo>& GetMockSleepTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> mock_sleep_type_info =
+      {
+          {"mock_sleep",
+           {0, OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kCompareNever,
+            [](const ConfigOptions& /*opts*/, const std::string& /*name*/,
+               const std::string& value, void* addr) {
+              auto clock = static_cast<EmulatedSystemClock*>(addr);
+              clock->SetMockSleep(ParseBoolean("", value));
+              return Status::OK();
+            },
+            [](const ConfigOptions& /*opts*/, const std::string& /*name*/,
+               const void* addr, std::string* value) {
+              const auto clock = static_cast<const EmulatedSystemClock*>(addr);
+              *value = clock->IsMockSleepEnabled() ? "true" : "false";
+              return Status::OK();
+            },
+            nullptr}},
+      };
+  return mock_sleep_type_info;
+}
 }  // namespace
 
 EmulatedSystemClock::EmulatedSystemClock(
@@ -76,8 +86,8 @@ EmulatedSystemClock::EmulatedSystemClock(
       maybe_starting_time_(MaybeCurrentTime(base)),
       time_elapse_only_sleep_(time_elapse_only_sleep),
       no_slowdown_(time_elapse_only_sleep) {
-  RegisterOptions("", this, &time_elapse_type_info);
-  RegisterOptions("", this, &mock_sleep_type_info);
+  RegisterOptions("", this, &GetTimeElapseTypeInfo());
+  RegisterOptions("", this, &GetMockSleepTypeInfo());
 }
 
 class MemFile {
@@ -566,19 +576,21 @@ class TestMemLogger : public Logger {
   }
   size_t GetLogFileSize() const override { return log_size_; }
 };
-
-static std::unordered_map<std::string, OptionTypeInfo> mock_fs_type_info = {
-    {"supports_direct_io",
-     {0, OptionType::kBoolean, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>& GetMockFSTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> mock_fs_type_info = {
+      {"supports_direct_io",
+       {0, OptionType::kBoolean, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+  };
+  return mock_fs_type_info;
+}
 }  // namespace
 
 MockFileSystem::MockFileSystem(const std::shared_ptr<SystemClock>& clock,
                                bool supports_direct_io)
     : system_clock_(clock), supports_direct_io_(supports_direct_io) {
   clock_ = system_clock_.get();
-  RegisterOptions("", &supports_direct_io_, &mock_fs_type_info);
+  RegisterOptions("", &supports_direct_io_, &GetMockFSTypeInfo());
 }
 
 MockFileSystem::~MockFileSystem() {
@@ -1053,6 +1065,5 @@ Status MockEnv::CorruptBuffer(const std::string& fname) {
 
 // This is to maintain the behavior before swithcing from InMemoryEnv to MockEnv
 Env* NewMemEnv(Env* base_env) { return MockEnv::Create(base_env); }
-
 
 }  // namespace ROCKSDB_NAMESPACE

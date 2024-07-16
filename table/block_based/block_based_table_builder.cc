@@ -235,9 +235,9 @@ class BlockBasedTableBuilder::BlockBasedTablePropertiesCollector
     PutFixed32(&val, static_cast<uint32_t>(index_type_));
     properties->insert({std::string(BlockBasedTablePropertyNames::kIndexType), val});
     properties->insert({std::string(BlockBasedTablePropertyNames::kWholeKeyFiltering),
-                        whole_key_filtering_ ? GetPropTrue() : GetPropTrue()});
+                        whole_key_filtering_ ? GetPropTrue() : GetPropFalse()});
     properties->insert({std::string(BlockBasedTablePropertyNames::kPrefixFiltering),
-                        prefix_filtering_ ? GetPropTrue() : GetPropTrue()});
+                        prefix_filtering_ ? GetPropTrue() : GetPropFalse()});
     return Status::OK();
   }
 

@@ -176,7 +176,7 @@ int ParseTimeStringToSeconds(const std::string& value);
 bool TryParseTimeRangeString(const std::string& value, int& start_time,
                              int& end_time);
 
-extern const std::string kNullptrString;
+const std::string &GetNullptrString();
 
 // errnoStr() function returns a string that describes the error code passed in
 // the argument err

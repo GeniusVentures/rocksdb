@@ -288,15 +288,19 @@ MemTableRep::Iterator* VectorRep::GetIterator(Arena* arena) {
   }
 }
 }  // namespace
-
-static std::unordered_map<std::string, OptionTypeInfo> vector_rep_table_info = {
-    {"count",
-     {0, OptionType::kSizeT, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetVectorRepTableInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> vector_rep_table_info =
+      {
+          {"count",
+           {0, OptionType::kSizeT, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+      };
+  return vector_rep_table_info;
+}
 
 VectorRepFactory::VectorRepFactory(size_t count) : count_(count) {
-  RegisterOptions("VectorRepFactoryOptions", &count_, &vector_rep_table_info);
+  RegisterOptions("VectorRepFactoryOptions", &count_, &GetVectorRepTableInfo());
 }
 
 MemTableRep* VectorRepFactory::CreateMemTableRep(

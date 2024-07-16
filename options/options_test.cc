@@ -4015,7 +4015,7 @@ TEST_P(OptionsSanityCheckTest, MergeOperatorErrorMessage) {
       SanityCheckCFOptions(opts, ConfigOptions::kSanityLevelLooselyCompatible);
   ASSERT_TRUE(s.IsInvalidArgument());
   std::string err_msg = s.ToString();
-  std::string specified = "The specified one is " + kNullptrString;
+  std::string specified = "The specified one is " + GetNullptrString();
   std::string persisted = "the persisted one is " + merge_op_name;
   ASSERT_TRUE(err_msg.find(specified) != std::string::npos);
   ASSERT_TRUE(err_msg.find(persisted) != std::string::npos);

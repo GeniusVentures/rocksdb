@@ -14,22 +14,26 @@
 #include "utilities/cassandra/merge_operator.h"
 
 namespace ROCKSDB_NAMESPACE::cassandra {
-static std::unordered_map<std::string, OptionTypeInfo>
-    cassandra_filter_type_info = {
-        {"purge_ttl_on_expiration",
-         {offsetof(struct CassandraOptions, purge_ttl_on_expiration),
-          OptionType::kBoolean, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-        {"gc_grace_period_in_seconds",
-         {offsetof(struct CassandraOptions, gc_grace_period_in_seconds),
-          OptionType::kUInt32T, OptionVerificationType::kNormal,
-          OptionTypeFlags::kNone}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetCassandraFilterTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      cassandra_filter_type_info = {
+          {"purge_ttl_on_expiration",
+           {offsetof(struct CassandraOptions, purge_ttl_on_expiration),
+            OptionType::kBoolean, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+          {"gc_grace_period_in_seconds",
+           {offsetof(struct CassandraOptions, gc_grace_period_in_seconds),
+            OptionType::kUInt32T, OptionVerificationType::kNormal,
+            OptionTypeFlags::kNone}},
+      };
+  return cassandra_filter_type_info;
+}
 
 CassandraCompactionFilter::CassandraCompactionFilter(
     bool purge_ttl_on_expiration, int32_t gc_grace_period_in_seconds)
     : options_(gc_grace_period_in_seconds, 0, purge_ttl_on_expiration) {
-  RegisterOptions(&options_, &cassandra_filter_type_info);
+  RegisterOptions(&options_, &GetCassandraFilterTypeInfo());
 }
 
 CompactionFilter::Decision CassandraCompactionFilter::FilterV2(
@@ -63,7 +67,7 @@ CompactionFilter::Decision CassandraCompactionFilter::FilterV2(
 CassandraCompactionFilterFactory::CassandraCompactionFilterFactory(
     bool purge_ttl_on_expiration, int32_t gc_grace_period_in_seconds)
     : options_(gc_grace_period_in_seconds, 0, purge_ttl_on_expiration) {
-  RegisterOptions(&options_, &cassandra_filter_type_info);
+  RegisterOptions(&options_, &GetCassandraFilterTypeInfo());
 }
 
 std::unique_ptr<CompactionFilter>

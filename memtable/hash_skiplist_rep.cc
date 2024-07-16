@@ -331,20 +331,23 @@ struct HashSkipListRepOptions {
   int32_t skiplist_height;
   int32_t skiplist_branching_factor;
 };
-
-static std::unordered_map<std::string, OptionTypeInfo> hash_skiplist_info = {
-    {"bucket_count",
-     {offsetof(struct HashSkipListRepOptions, bucket_count), OptionType::kSizeT,
-      OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
-    {"skiplist_height",
-     {offsetof(struct HashSkipListRepOptions, skiplist_height),
-      OptionType::kInt32T, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-    {"branching_factor",
-     {offsetof(struct HashSkipListRepOptions, skiplist_branching_factor),
-      OptionType::kInt32T, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>& GetHashSkipListInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> hash_skiplist_info = {
+      {"bucket_count",
+       {offsetof(struct HashSkipListRepOptions, bucket_count),
+        OptionType::kSizeT, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"skiplist_height",
+       {offsetof(struct HashSkipListRepOptions, skiplist_height),
+        OptionType::kInt32T, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"branching_factor",
+       {offsetof(struct HashSkipListRepOptions, skiplist_branching_factor),
+        OptionType::kInt32T, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+  };
+  return hash_skiplist_info;
+}
 
 class HashSkipListRepFactory : public MemTableRepFactory {
  public:
@@ -353,7 +356,7 @@ class HashSkipListRepFactory : public MemTableRepFactory {
     options_.bucket_count = bucket_count;
     options_.skiplist_height = skiplist_height;
     options_.skiplist_branching_factor = skiplist_branching_factor;
-    RegisterOptions(&options_, &hash_skiplist_info);
+    RegisterOptions(&options_, &GetHashSkipListInfo());
   }
 
   using MemTableRepFactory::CreateMemTableRep;

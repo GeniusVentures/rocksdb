@@ -23,24 +23,27 @@ namespace ROCKSDB_NAMESPACE {
 #ifdef ROCKSDB_JEMALLOC_NODUMP_ALLOCATOR
 std::atomic<extent_alloc_t*> JemallocNodumpAllocator::original_alloc_{nullptr};
 #endif  // ROCKSDB_JEMALLOC_NODUMP_ALLOCATOR
-
-static std::unordered_map<std::string, OptionTypeInfo> jemalloc_type_info = {
-    {"limit_tcache_size",
-     {offsetof(struct JemallocAllocatorOptions, limit_tcache_size),
-      OptionType::kBoolean, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-    {"tcache_size_lower_bound",
-     {offsetof(struct JemallocAllocatorOptions, tcache_size_lower_bound),
-      OptionType::kSizeT, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-    {"tcache_size_upper_bound",
-     {offsetof(struct JemallocAllocatorOptions, tcache_size_upper_bound),
-      OptionType::kSizeT, OptionVerificationType::kNormal,
-      OptionTypeFlags::kNone}},
-    {"num_arenas",
-     {offsetof(struct JemallocAllocatorOptions, num_arenas), OptionType::kSizeT,
-      OptionVerificationType::kNormal, OptionTypeFlags::kNone}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>& GetJemallocTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> jemalloc_type_info = {
+      {"limit_tcache_size",
+       {offsetof(struct JemallocAllocatorOptions, limit_tcache_size),
+        OptionType::kBoolean, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"tcache_size_lower_bound",
+       {offsetof(struct JemallocAllocatorOptions, tcache_size_lower_bound),
+        OptionType::kSizeT, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"tcache_size_upper_bound",
+       {offsetof(struct JemallocAllocatorOptions, tcache_size_upper_bound),
+        OptionType::kSizeT, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+      {"num_arenas",
+       {offsetof(struct JemallocAllocatorOptions, num_arenas),
+        OptionType::kSizeT, OptionVerificationType::kNormal,
+        OptionTypeFlags::kNone}},
+  };
+  return jemalloc_type_info;
+}
 bool JemallocNodumpAllocator::IsSupported(std::string* why) {
 #ifndef ROCKSDB_JEMALLOC
   *why = "Not compiled with ROCKSDB_JEMALLOC";
@@ -71,7 +74,7 @@ JemallocNodumpAllocator::JemallocNodumpAllocator(
 #else   // ROCKSDB_JEMALLOC_NODUMP_ALLOCATOR
 {
 #endif  // ROCKSDB_JEMALLOC_NODUMP_ALLOCATOR
-  RegisterOptions(&options_, &jemalloc_type_info);
+  RegisterOptions(&options_, &GetJemallocTypeInfo());
 }
 
 #ifdef ROCKSDB_JEMALLOC_NODUMP_ALLOCATOR

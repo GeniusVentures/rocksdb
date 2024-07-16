@@ -26,13 +26,16 @@
 
 namespace ROCKSDB_NAMESPACE {
 
-static const std::string option_file_header =
-    "# This is a RocksDB option file.\n"
-    "#\n"
-    "# For detailed file format spec, please refer to the example file\n"
-    "# in examples/rocksdb_option_file_example.ini\n"
-    "#\n"
-    "\n";
+static const std::string& GetOptionFileHeader() {
+  static const std::string option_file_header =
+      "# This is a RocksDB option file.\n"
+      "#\n"
+      "# For detailed file format spec, please refer to the example file\n"
+      "# in examples/rocksdb_option_file_example.ini\n"
+      "#\n"
+      "\n";
+  return option_file_header;
+}
 const std::array<std::string, 5>& GetOptSectionTitles() {
   static const std::array<std::string, 5> opt_section_titles = {
       "Version", "DBOptions", "CFOptions", "TableOptions/", "Unknown"};
@@ -88,7 +91,7 @@ Status PersistRocksDBOptions(const WriteOptions& write_options,
   s = WritableFileWriter::PrepareIOOptions(write_options, opts);
   if (s.ok()) {
     s = writable->Append(opts,
-                         option_file_header + "[" +
+                         GetOptionFileHeader() + "[" +
                              GetOptSectionTitles()[kOptionSectionVersion] +
                              "]\n"
                              "  rocksdb_version=" +
@@ -697,7 +700,7 @@ Status RocksDBOptionsParser::VerifyCFOptions(
       // In file_opt, certain options like MergeOperator may be nullptr due to
       //   factor methods not available. So we use opt_map to get
       //   option value to use in the error message below.
-      if (s.ok() && file_value == kNullptrString && opt_map) {
+      if (s.ok() && file_value == GetNullptrString() && opt_map) {
         auto const& opt_val_str = (opt_map->find(mismatch));
         if (opt_val_str != opt_map->end()) {
           file_value = opt_val_str->second;

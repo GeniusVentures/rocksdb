@@ -390,62 +390,81 @@ Status CompositeEnv::NewDirectory(const std::string& name,
 }
 
 namespace {
-static std::unordered_map<std::string, OptionTypeInfo> env_wrapper_type_info = {
-    {"target",
-     OptionTypeInfo(0, OptionType::kUnknown, OptionVerificationType::kByName,
-                    OptionTypeFlags::kDontSerialize)
-         .SetParseFunc([](const ConfigOptions& opts,
-                          const std::string& /*name*/, const std::string& value,
-                          void* addr) {
-           auto target = static_cast<EnvWrapper::Target*>(addr);
-           return Env::CreateFromString(opts, value, &(target->env),
-                                        &(target->guard));
-         })
-         .SetEqualsFunc([](const ConfigOptions& opts,
-                           const std::string& /*name*/, const void* addr1,
-                           const void* addr2, std::string* mismatch) {
-           const auto target1 = static_cast<const EnvWrapper::Target*>(addr1);
-           const auto target2 = static_cast<const EnvWrapper::Target*>(addr2);
-           if (target1->env != nullptr) {
-             return target1->env->AreEquivalent(opts, target2->env, mismatch);
-           } else {
-             return (target2->env == nullptr);
-           }
-         })
-         .SetPrepareFunc([](const ConfigOptions& opts,
-                            const std::string& /*name*/, void* addr) {
-           auto target = static_cast<EnvWrapper::Target*>(addr);
-           if (target->guard.get() != nullptr) {
-             target->env = target->guard.get();
-           } else if (target->env == nullptr) {
-             target->env = Env::Default();
-           }
-           return target->env->PrepareOptions(opts);
-         })
-         .SetValidateFunc([](const DBOptions& db_opts,
-                             const ColumnFamilyOptions& cf_opts,
-                             const std::string& /*name*/, const void* addr) {
-           const auto target = static_cast<const EnvWrapper::Target*>(addr);
-           if (target->env == nullptr) {
-             return Status::InvalidArgument("Target Env not specified");
-           } else {
-             return target->env->ValidateOptions(db_opts, cf_opts);
-           }
-         })},
-};
-static std::unordered_map<std::string, OptionTypeInfo>
-    composite_fs_wrapper_type_info = {
-        {"file_system",
-         OptionTypeInfo::AsCustomSharedPtr<FileSystem>(
-             0, OptionVerificationType::kByName, OptionTypeFlags::kNone)},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetEnvWrapperTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> env_wrapper_type_info =
+      {
+          {"target",
+           OptionTypeInfo(0, OptionType::kUnknown,
+                          OptionVerificationType::kByName,
+                          OptionTypeFlags::kDontSerialize)
+               .SetParseFunc([](const ConfigOptions& opts,
+                                const std::string& /*name*/,
+                                const std::string& value, void* addr) {
+                 auto target = static_cast<EnvWrapper::Target*>(addr);
+                 return Env::CreateFromString(opts, value, &(target->env),
+                                              &(target->guard));
+               })
+               .SetEqualsFunc([](const ConfigOptions& opts,
+                                 const std::string& /*name*/, const void* addr1,
+                                 const void* addr2, std::string* mismatch) {
+                 const auto target1 =
+                     static_cast<const EnvWrapper::Target*>(addr1);
+                 const auto target2 =
+                     static_cast<const EnvWrapper::Target*>(addr2);
+                 if (target1->env != nullptr) {
+                   return target1->env->AreEquivalent(opts, target2->env,
+                                                      mismatch);
+                 } else {
+                   return (target2->env == nullptr);
+                 }
+               })
+               .SetPrepareFunc([](const ConfigOptions& opts,
+                                  const std::string& /*name*/, void* addr) {
+                 auto target = static_cast<EnvWrapper::Target*>(addr);
+                 if (target->guard.get() != nullptr) {
+                   target->env = target->guard.get();
+                 } else if (target->env == nullptr) {
+                   target->env = Env::Default();
+                 }
+                 return target->env->PrepareOptions(opts);
+               })
+               .SetValidateFunc([](const DBOptions& db_opts,
+                                   const ColumnFamilyOptions& cf_opts,
+                                   const std::string& /*name*/,
+                                   const void* addr) {
+                 const auto target =
+                     static_cast<const EnvWrapper::Target*>(addr);
+                 if (target->env == nullptr) {
+                   return Status::InvalidArgument("Target Env not specified");
+                 } else {
+                   return target->env->ValidateOptions(db_opts, cf_opts);
+                 }
+               })},
+      };
+  return env_wrapper_type_info;
+}
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetCompositeFSWrapperTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      composite_fs_wrapper_type_info = {
+          {"file_system",
+           OptionTypeInfo::AsCustomSharedPtr<FileSystem>(
+               0, OptionVerificationType::kByName, OptionTypeFlags::kNone)},
+      };
+  return composite_fs_wrapper_type_info;
+}
 
-static std::unordered_map<std::string, OptionTypeInfo>
-    composite_clock_wrapper_type_info = {
-        {"clock",
-         OptionTypeInfo::AsCustomSharedPtr<SystemClock>(
-             0, OptionVerificationType::kByName, OptionTypeFlags::kNone)},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetCompositeClockWrapperTypeInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo>
+      composite_clock_wrapper_type_info = {
+          {"clock",
+           OptionTypeInfo::AsCustomSharedPtr<SystemClock>(
+               0, OptionVerificationType::kByName, OptionTypeFlags::kNone)},
+      };
+  return composite_clock_wrapper_type_info;
+}
 
 }  // namespace
 
@@ -457,18 +476,18 @@ CompositeEnvWrapper::CompositeEnvWrapper(Env* env,
                                          const std::shared_ptr<FileSystem>& fs,
                                          const std::shared_ptr<SystemClock>& sc)
     : CompositeEnv(fs, sc), target_(env) {
-  RegisterOptions("", &target_, &env_wrapper_type_info);
-  RegisterOptions("", &file_system_, &composite_fs_wrapper_type_info);
-  RegisterOptions("", &system_clock_, &composite_clock_wrapper_type_info);
+  RegisterOptions("", &target_, &GetEnvWrapperTypeInfo());
+  RegisterOptions("", &file_system_, &GetCompositeFSWrapperTypeInfo());
+  RegisterOptions("", &system_clock_, &GetCompositeClockWrapperTypeInfo());
 }
 
 CompositeEnvWrapper::CompositeEnvWrapper(const std::shared_ptr<Env>& env,
                                          const std::shared_ptr<FileSystem>& fs,
                                          const std::shared_ptr<SystemClock>& sc)
     : CompositeEnv(fs, sc), target_(env) {
-  RegisterOptions("", &target_, &env_wrapper_type_info);
-  RegisterOptions("", &file_system_, &composite_fs_wrapper_type_info);
-  RegisterOptions("", &system_clock_, &composite_clock_wrapper_type_info);
+  RegisterOptions("", &target_, &GetEnvWrapperTypeInfo());
+  RegisterOptions("", &file_system_, &GetCompositeFSWrapperTypeInfo());
+  RegisterOptions("", &system_clock_, &GetCompositeClockWrapperTypeInfo());
 }
 
 Status CompositeEnvWrapper::PrepareOptions(const ConfigOptions& options) {
@@ -493,15 +512,15 @@ std::string CompositeEnvWrapper::SerializeOptions(
 }
 
 EnvWrapper::EnvWrapper(Env* t) : target_(t) {
-  RegisterOptions("", &target_, &env_wrapper_type_info);
+  RegisterOptions("", &target_, &GetEnvWrapperTypeInfo());
 }
 
 EnvWrapper::EnvWrapper(std::unique_ptr<Env>&& t) : target_(std::move(t)) {
-  RegisterOptions("", &target_, &env_wrapper_type_info);
+  RegisterOptions("", &target_, &GetEnvWrapperTypeInfo());
 }
 
 EnvWrapper::EnvWrapper(const std::shared_ptr<Env>& t) : target_(t) {
-  RegisterOptions("", &target_, &env_wrapper_type_info);
+  RegisterOptions("", &target_, &GetEnvWrapperTypeInfo());
 }
 
 EnvWrapper::~EnvWrapper() = default;

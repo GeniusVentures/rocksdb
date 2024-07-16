@@ -27,25 +27,25 @@
 namespace ROCKSDB_NAMESPACE {
 
 const std::string& GetPropertiesBlockName() {
-  const std::string kPropertiesBlockName = "rocksdb.properties";
+  static const std::string kPropertiesBlockName = "rocksdb.properties";
   return kPropertiesBlockName;
 }
 // NB: only used with format_version >= 6
 const std::string& GetIndexBlockName() {
-  const std::string kIndexBlockName = "rocksdb.index";
+  static const std::string kIndexBlockName = "rocksdb.index";
   return kIndexBlockName;
 }
 // Old property block name for backward compatibility
 const std::string& GetPropertiesBlockOldName() {
-  const std::string kPropertiesBlockOldName = "rocksdb.stats";
+  static const std::string kPropertiesBlockOldName = "rocksdb.stats";
   return kPropertiesBlockOldName;
 }
 const std::string& GetCompressionDictBlockName() {
-  const std::string kCompressionDictBlockName = "rocksdb.compression_dict";
+  static const std::string kCompressionDictBlockName = "rocksdb.compression_dict";
   return kCompressionDictBlockName;
 }
 const std::string& GetRangeDelBlockName() {
-  const std::string kRangeDelBlockName = "rocksdb.range_del";
+  static const std::string kRangeDelBlockName = "rocksdb.range_del";
   return kRangeDelBlockName;
 }
 

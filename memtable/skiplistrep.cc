@@ -327,28 +327,30 @@ class SkipListRep : public MemTableRep {
     if (lookahead_ > 0) {
       void* mem =
           arena ? arena->AllocateAligned(sizeof(SkipListRep::LookaheadIterator))
-                :
-                operator new(sizeof(SkipListRep::LookaheadIterator));
+                : operator new(sizeof(SkipListRep::LookaheadIterator));
       return new (mem) SkipListRep::LookaheadIterator(*this);
     } else {
       void* mem = arena ? arena->AllocateAligned(sizeof(SkipListRep::Iterator))
-                        :
-                        operator new(sizeof(SkipListRep::Iterator));
+                        : operator new(sizeof(SkipListRep::Iterator));
       return new (mem) SkipListRep::Iterator(&skip_list_);
     }
   }
 };
 }  // namespace
-
-static std::unordered_map<std::string, OptionTypeInfo> skiplist_factory_info = {
-    {"lookahead",
-     {0, OptionType::kSizeT, OptionVerificationType::kNormal,
-      OptionTypeFlags::kDontSerialize /*Since it is part of the ID*/}},
-};
+static std::unordered_map<std::string, OptionTypeInfo>&
+GetSkipListFactoryInfo() {
+  static std::unordered_map<std::string, OptionTypeInfo> skiplist_factory_info =
+      {
+          {"lookahead",
+           {0, OptionType::kSizeT, OptionVerificationType::kNormal,
+            OptionTypeFlags::kDontSerialize /*Since it is part of the ID*/}},
+      };
+  return skiplist_factory_info;
+}
 
 SkipListFactory::SkipListFactory(size_t lookahead) : lookahead_(lookahead) {
   RegisterOptions("SkipListFactoryOptions", &lookahead_,
-                  &skiplist_factory_info);
+                  &GetSkipListFactoryInfo());
 }
 
 std::string SkipListFactory::GetId() const {
