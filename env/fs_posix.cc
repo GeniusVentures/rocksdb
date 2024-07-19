@@ -90,7 +90,10 @@ struct LockHoldingInfo {
   int64_t acquire_time;
   uint64_t acquiring_thread;
 };
-static port::Mutex mutex_locked_files;
+static port::Mutex& GetMutexLockedFiles() {
+  static port::Mutex mutex_locked_files;
+  return mutex_locked_files;
+}
 
 static std::map<std::string, LockHoldingInfo>& GetLockedFilesMap() {
   static std::map<std::string, LockHoldingInfo> locked_files;
@@ -753,7 +756,7 @@ class PosixFileSystem : public FileSystem {
     lhi.acquire_time = current_time;
     lhi.acquiring_thread = Env::Default()->GetThreadID();
 
-    mutex_locked_files.Lock();
+    GetMutexLockedFiles().Lock();
     // If it already exists in the locked_files set, then it is already locked,
     // and fail this lock attempt. Otherwise, insert it into locked_files.
     // This check is needed because fcntl() does not detect lock conflict
@@ -766,7 +769,7 @@ class PosixFileSystem : public FileSystem {
     const auto it_success = GetLockedFilesMap().insert({fname, lhi});
     if (it_success.second == false) {
       LockHoldingInfo prev_info = it_success.first->second;
-      mutex_locked_files.Unlock();
+      GetMutexLockedFiles().Unlock();
       errno = ENOLCK;
       // Note that the thread ID printed is the same one as the one in
       // posix logger, but posix logger prints it hex format.
@@ -804,7 +807,7 @@ class PosixFileSystem : public FileSystem {
       GetLockedFilesMap().erase(fname);
     }
 
-    mutex_locked_files.Unlock();
+    GetMutexLockedFiles().Unlock();
     return result;
   }
 
@@ -812,7 +815,7 @@ class PosixFileSystem : public FileSystem {
                       IODebugContext* /*dbg*/) override {
     PosixFileLock* my_lock = static_cast<PosixFileLock*>(lock);
     IOStatus result;
-    mutex_locked_files.Lock();
+    GetMutexLockedFiles().Lock();
     // If we are unlocking, then verify that we had locked it earlier,
     // it should already exist in locked_files. Remove it from locked_files.
     if (GetLockedFilesMap().erase(my_lock->filename) != 1) {
@@ -824,7 +827,7 @@ class PosixFileSystem : public FileSystem {
     close(my_lock->fd_);
     my_lock->Clear();
     delete my_lock;
-    mutex_locked_files.Unlock();
+    GetMutexLockedFiles().Unlock();
     return result;
   }
 
