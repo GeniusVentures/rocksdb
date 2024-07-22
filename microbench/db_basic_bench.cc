@@ -338,7 +338,7 @@ static void DBPutArguments(benchmark::internal::Benchmark* b) {
       {"comp_style", "max_data", "per_key_size", "enable_statistics", "wal"});
 }
 
-static const uint64_t DBPutNum = 409600l;
+static constexpr uint64_t DBPutNum = 409600l;
 BENCHMARK(DBPut)->Threads(1)->Iterations(DBPutNum)->Apply(DBPutArguments);
 BENCHMARK(DBPut)->Threads(8)->Iterations(DBPutNum / 8)->Apply(DBPutArguments);
 
@@ -700,7 +700,7 @@ static void DBGetArguments(benchmark::internal::Benchmark* b) {
                "compression_checksum", "no_blockcache"});
 }
 
-static const uint64_t DBGetNum = 10000l;
+static constexpr uint64_t DBGetNum = 10000l;
 BENCHMARK(DBGet)->Threads(1)->Iterations(DBGetNum)->Apply(DBGetArguments);
 BENCHMARK(DBGet)->Threads(8)->Iterations(DBGetNum / 8)->Apply(DBGetArguments);
 

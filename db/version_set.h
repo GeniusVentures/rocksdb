@@ -546,7 +546,7 @@ class VersionStorageInfo {
   // that on a running system, we need to look at only the first
   // few largest files because a new version is created every few
   // seconds/minutes (because of concurrent compactions).
-  static const size_t kNumberFilesToSort = 50;
+  static constexpr size_t kNumberFilesToSort = 50;
 
   // Return a human-readable short (single-line) summary of the number
   // of files per level.  Uses *scratch as backing store.
@@ -700,7 +700,7 @@ class VersionStorageInfo {
   // that on a running system, we need to look at only the first
   // few largest files because a new version is created every few
   // seconds/minutes (because of concurrent compactions).
-  static const size_t number_of_files_to_sort_ = 50;
+  static constexpr size_t number_of_files_to_sort_ = 50;
 
   // This vector contains list of files marked for compaction and also not
   // currently being compacted. It is protected by DB mutex. It is calculated in

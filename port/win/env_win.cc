@@ -52,7 +52,7 @@ ThreadStatusUpdater* CreateThreadStatusUpdater() {
 namespace {
 
 // Sector size used when physical sector size cannot be obtained from device.
-static const size_t kSectorSize = 512;
+static constexpr size_t kSectorSize = 512;
 
 // RAII helpers for HANDLEs
 const auto CloseHandleFunc = [](HANDLE h) { ::CloseHandle(h); };

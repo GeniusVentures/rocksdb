@@ -22,7 +22,7 @@ namespace port {
 
 // The following boolean constant must be true on a little-endian machine
 // and false otherwise.
-static const bool kLittleEndian = true /* or some other expression */;
+static constexpr bool kLittleEndian = true /* or some other expression */;
 
 // ------------------ Threading -------------------
 

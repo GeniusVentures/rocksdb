@@ -8,7 +8,7 @@
 #include "util/random.h"
 
 namespace ROCKSDB_NAMESPACE {
-static const uint32_t kFileReadSampleRate = 1024;
+static constexpr uint32_t kFileReadSampleRate = 1024;
 bool should_sample_file_read();
 void sample_file_read_inc(FileMetaData*);
 

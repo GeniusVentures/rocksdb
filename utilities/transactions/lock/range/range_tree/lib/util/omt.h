@@ -137,7 +137,7 @@ class subtree_templated {
   uint32_t m_index;
 
  public:
-  static const uint32_t NODE_NULL = UINT32_MAX;
+  static constexpr uint32_t NODE_NULL = UINT32_MAX;
   inline void set_to_null(void) { m_index = NODE_NULL; }
 
   inline bool is_null(void) const { return NODE_NULL == this->get_index(); }
@@ -154,15 +154,15 @@ template <>
 class subtree_templated<true> {
  private:
   uint32_t m_bitfield;
-  static const uint32_t MASK_INDEX = ~(((uint32_t)1) << 31);
-  static const uint32_t MASK_BIT = ((uint32_t)1) << 31;
+  static constexpr uint32_t MASK_INDEX = ~(((uint32_t)1) << 31);
+  static constexpr uint32_t MASK_BIT = ((uint32_t)1) << 31;
 
   inline void set_index_internal(uint32_t new_index) {
     m_bitfield = (m_bitfield & MASK_BIT) | new_index;
   }
 
  public:
-  static const uint32_t NODE_NULL = INT32_MAX;
+  static constexpr uint32_t NODE_NULL = INT32_MAX;
   inline void set_to_null(void) { this->set_index_internal(NODE_NULL); }
 
   inline bool is_null(void) const { return NODE_NULL == this->get_index(); }

@@ -171,7 +171,7 @@ class PlainTableFactory : public TableFactory {
       WritableFileWriter* file) const override;
 
   std::string GetPrintableOptions() const override;
-  static const char kValueTypeSeqId0 = char(~0);
+  static constexpr char kValueTypeSeqId0 = char(~0);
 
  private:
   PlainTableOptions table_options_;

@@ -1304,8 +1304,8 @@ class DBTestBase : public testing::Test {
 
   void GenerateNewFile(int fd, Random* rnd, int* key_idx, bool nowait = false);
 
-  static const int kNumKeysByGenerateNewRandomFile;
-  static const int KNumKeysByGenerateNewFile = 100;
+  static constexpr int kNumKeysByGenerateNewRandomFile = 51;
+  static constexpr int KNumKeysByGenerateNewFile = 100;
 
   void GenerateNewRandomFile(Random* rnd, bool nowait = false);
 

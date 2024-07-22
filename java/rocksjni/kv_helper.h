@@ -34,8 +34,8 @@ class KVException : public std::exception {
  public:
   // These values are expected on Java API calls to represent the result of a
   // Get() which has failed; a negative length is returned to indicate an error.
-  static const int kNotFound = -1;  // the key was not found in RocksDB
-  static const int kStatusError =
+  static constexpr int kNotFound = -1;  // the key was not found in RocksDB
+  static constexpr int kStatusError =
       -2;  // there was some other error fetching the value for the key
 
   /**

@@ -81,7 +81,7 @@ class comparator {
 
  public:
   // This magic value is reserved to mean that the magic has not been set.
-  static const uint8_t MEMCMP_MAGIC_NONE = 0;
+  static constexpr uint8_t MEMCMP_MAGIC_NONE = 0;
 
   void create(ft_compare_func cmp, void *cmp_arg,
               uint8_t memcmp_magic = MEMCMP_MAGIC_NONE) {

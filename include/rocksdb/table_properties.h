@@ -184,8 +184,8 @@ class TablePropertiesCollectorFactory : public Customizable {
     // it indicates tiering is disabled.
     SequenceNumber last_level_inclusive_max_seqno_threshold;
     static const uint32_t kUnknownColumnFamily;
-    static const int kUnknownLevelAtCreation = -1;
-    static const int kUnknownNumLevels = -1;
+    static constexpr int kUnknownLevelAtCreation = -1;
+    static constexpr int kUnknownNumLevels = -1;
 
     Context() {}
 

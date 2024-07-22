@@ -153,7 +153,7 @@ class PlainTableReader : public TableReader {
   const uint32_t user_key_len_;
   const SliceTransform* prefix_extractor_;
 
-  static const size_t kNumInternalBytes = 8;
+  static constexpr size_t kNumInternalBytes = 8;
 
   // Bloom filter is used to rule out non-existent key
   bool enable_bloom_;

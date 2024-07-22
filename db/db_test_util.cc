@@ -1371,8 +1371,6 @@ void DBTestBase::GenerateNewFile(Random* rnd, int* key_idx, bool nowait) {
   }
 }
 
-const int DBTestBase::kNumKeysByGenerateNewRandomFile = 51;
-
 void DBTestBase::GenerateNewRandomFile(Random* rnd, bool nowait) {
   for (int i = 0; i < kNumKeysByGenerateNewRandomFile; i++) {
     ASSERT_OK(Put("key" + rnd->RandomString(7), rnd->RandomString(2000)));

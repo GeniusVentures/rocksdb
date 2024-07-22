@@ -39,7 +39,7 @@ class CompactOnDeletionCollector : public TablePropertiesCollector {
   // EXPERIMENTAL Return whether the output file should be further compacted
   bool NeedCompact() const override { return need_compaction_; }
 
-  static const int kNumBuckets = 128;
+  static constexpr int kNumBuckets = 128;
 
  private:
   void Reset();

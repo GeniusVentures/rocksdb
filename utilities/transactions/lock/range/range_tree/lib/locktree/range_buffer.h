@@ -69,7 +69,7 @@ class range_buffer {
   // each record has the following header, followed by the
   // left key and right key data payload, if applicable.
   // we limit keys to be 2^16, since we store lengths as 2 bytes.
-  static const size_t MAX_KEY_SIZE = 1 << 16;
+  static constexpr size_t MAX_KEY_SIZE = 1 << 16;
 
   struct record_header {
     bool left_neg_inf;

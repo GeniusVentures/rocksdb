@@ -81,11 +81,11 @@ class ProtectionInfo {
   // `head -c8 /dev/urandom | hexdump`, run repeatedly until it yielded an odd
   // number. The values are computed manually since the Windows C++ compiler
   // complains about the overflow when adding constants.
-  static const uint64_t kSeedK = 0;
-  static const uint64_t kSeedV = 0xD28AAD72F49BD50B;
-  static const uint64_t kSeedO = 0xA5155AE5E937AA16;
-  static const uint64_t kSeedS = 0x77A00858DDD37F21;
-  static const uint64_t kSeedC = 0x4A2AB5CBD26F542C;
+  static constexpr uint64_t kSeedK = 0;
+  static constexpr uint64_t kSeedV = 0xD28AAD72F49BD50B;
+  static constexpr uint64_t kSeedO = 0xA5155AE5E937AA16;
+  static constexpr uint64_t kSeedS = 0x77A00858DDD37F21;
+  static constexpr uint64_t kSeedC = 0x4A2AB5CBD26F542C;
 
   ProtectionInfo(T val) : val_(val) {
     static_assert(sizeof(ProtectionInfo<T>) == sizeof(T), "");

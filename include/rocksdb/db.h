@@ -97,8 +97,8 @@ class ColumnFamilyHandle {
   virtual const Comparator* GetComparator() const = 0;
 };
 
-static const int kMajorVersion = __ROCKSDB_MAJOR__;
-static const int kMinorVersion = __ROCKSDB_MINOR__;
+static constexpr int kMajorVersion = __ROCKSDB_MAJOR__;
+static constexpr int kMinorVersion = __ROCKSDB_MINOR__;
 
 // A range of keys
 struct Range {

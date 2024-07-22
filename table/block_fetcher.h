@@ -107,7 +107,7 @@ class BlockFetcher {
   int num_compressed_buf_memcpy_ = 0;
 
 #endif
-  static const uint32_t kDefaultStackBufferSize = 5000;
+  static constexpr uint32_t kDefaultStackBufferSize = 5000;
 
   RandomAccessFileReader* file_;
   FilePrefetchBuffer* prefetch_buffer_;

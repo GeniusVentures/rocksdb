@@ -106,9 +106,9 @@ class PlainTableIndex {
 
   uint32_t GetNumPrefixes() const { return num_prefixes_; }
 
-  static const uint64_t kMaxFileSize = (1u << 31) - 1;
-  static const uint32_t kSubIndexMask = 0x80000000;
-  static const size_t kOffsetLen = sizeof(uint32_t);
+  static constexpr uint64_t kMaxFileSize = (1u << 31) - 1;
+  static constexpr uint32_t kSubIndexMask = 0x80000000;
+  static constexpr size_t kOffsetLen = sizeof(uint32_t);
 
  private:
   uint32_t index_size_;
@@ -239,7 +239,7 @@ class PlainTableIndexBuilder {
 
   std::string prev_key_prefix_;
 
-  static const size_t kRecordsPerGroup = 256;
+  static constexpr size_t kRecordsPerGroup = 256;
 };
 
 }  // namespace ROCKSDB_NAMESPACE

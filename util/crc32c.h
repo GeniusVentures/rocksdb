@@ -34,7 +34,7 @@ uint32_t Crc32cCombine(uint32_t crc1, uint32_t crc2, size_t crc2len);
 // Return the crc32c of data[0,n-1]
 inline uint32_t Value(const char* data, size_t n) { return Extend(0, data, n); }
 
-static const uint32_t kMaskDelta = 0xa282ead8ul;
+static constexpr uint32_t kMaskDelta = 0xa282ead8ul;
 
 // Return a masked representation of crc.
 //

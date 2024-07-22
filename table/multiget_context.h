@@ -100,7 +100,7 @@ class MultiGetContext {
   // there is negligible benefit for batches exceeding this. Keeping this < 32
   // simplifies iteration, as well as reduces the amount of stack allocations
   // that need to be performed
-  static const int MAX_BATCH_SIZE = 32;
+  static constexpr int MAX_BATCH_SIZE = 32;
 
   // A bitmask of at least MAX_BATCH_SIZE - 1 bits, so that
   // Mask{1} << MAX_BATCH_SIZE is well defined
@@ -158,7 +158,7 @@ class MultiGetContext {
 #endif  // USE_COROUTINES
 
  private:
-  static const int MAX_LOOKUP_KEYS_ON_STACK = 16;
+  static constexpr int MAX_LOOKUP_KEYS_ON_STACK = 16;
   alignas(
       alignof(LookupKey)) char lookup_key_stack_buf[sizeof(LookupKey) *
                                                     MAX_LOOKUP_KEYS_ON_STACK];

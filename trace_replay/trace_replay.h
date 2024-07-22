@@ -44,8 +44,8 @@ const unsigned int kTracePayloadLengthSize = 4;
 const unsigned int kTraceMetadataSize =
     kTraceTimestampSize + kTraceTypeSize + kTracePayloadLengthSize;
 
-static const int kTraceFileMajorVersion = 0;
-static const int kTraceFileMinorVersion = 2;
+static constexpr int kTraceFileMajorVersion = 0;
+static constexpr int kTraceFileMinorVersion = 2;
 
 // The data structure that defines a single trace.
 struct Trace {

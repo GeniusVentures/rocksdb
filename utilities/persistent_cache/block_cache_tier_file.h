@@ -207,7 +207,7 @@ class WriteableCacheFile : public RandomAccessCacheFile {
  private:
   friend class ThreadedWriter;
 
-  static const size_t kFileAlignmentSize = 4 * 1024;  // align file size
+  static constexpr size_t kFileAlignmentSize = 4 * 1024;  // align file size
 
   bool ReadBuffer(const LBA& lba, Slice* key, Slice* block, char* scratch);
   bool ReadBuffer(const LBA& lba, char* data);

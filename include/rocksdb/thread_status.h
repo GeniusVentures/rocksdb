@@ -101,7 +101,7 @@ struct ThreadStatus {
 
   // The maximum number of properties of an operation.
   // This number should be set to the biggest NUM_XXX_PROPERTIES.
-  static const int kNumOperationProperties =
+  static constexpr int kNumOperationProperties =
       constexpr_max<NUM_COMPACTION_PROPERTIES, NUM_FLUSH_PROPERTIES>::result;
 
   // The type used to refer to a thread state.

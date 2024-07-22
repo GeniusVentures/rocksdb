@@ -97,7 +97,7 @@ struct CacheRecord {
                                  val.size());
   }
 
-  static const uint32_t MAGIC = 0xfefa;
+  static constexpr uint32_t MAGIC = 0xfefa;
 
   bool Append(std::vector<CacheWriteBuffer*>* bufs, size_t* woff,
               const char* data, const size_t size);

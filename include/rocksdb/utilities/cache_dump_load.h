@@ -25,8 +25,8 @@ namespace ROCKSDB_NAMESPACE {
 
 // The major and minor version number of the data format to be stored/trandfered
 // via CacheDumpWriter and read out via CacheDumpReader
-static const int kCacheDumpMajorVersion = 0;
-static const int kCacheDumpMinorVersion = 1;
+static constexpr int kCacheDumpMajorVersion = 0;
+static constexpr int kCacheDumpMinorVersion = 1;
 
 // NOTE that: this class is EXPERIMENTAL! May be changed in the future!
 // This is an abstract class to write or transfer the data that is created by

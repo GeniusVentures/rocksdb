@@ -188,7 +188,7 @@ class treenode {
   };
 
   // the balance factor at which a node is considered imbalanced
-  static const int32_t IMBALANCE_THRESHOLD = 2;
+  static constexpr int32_t IMBALANCE_THRESHOLD = 2;
 
   // node-level mutex
   toku_mutex_t m_mutex;

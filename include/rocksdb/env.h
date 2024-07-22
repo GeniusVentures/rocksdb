@@ -687,7 +687,7 @@ class Env : public Customizable {
   std::shared_ptr<SystemClock> system_clock_;
 
  private:
-  static const size_t kMaxHostNameLen = 256;
+  static constexpr size_t kMaxHostNameLen = 256;
 };
 
 // The factory function to construct a ThreadStatusUpdater.  Any Env

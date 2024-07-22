@@ -98,7 +98,7 @@ static size_t round_to_page(size_t size) {
   return r;
 }
 
-static const size_t MEMARENA_MAX_CHUNK_SIZE = 64 * 1024 * 1024;
+static constexpr size_t MEMARENA_MAX_CHUNK_SIZE = 64 * 1024 * 1024;
 
 void *memarena::malloc_from_arena(size_t size) {
   if (_current_chunk.buf == nullptr ||

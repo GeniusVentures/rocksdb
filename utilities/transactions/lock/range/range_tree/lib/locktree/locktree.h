@@ -204,7 +204,7 @@ class locktree_manager {
   void kill_waiter(void *extra);
 
  private:
-  static const uint64_t DEFAULT_MAX_LOCK_MEMORY = 64L * 1024 * 1024;
+  static constexpr uint64_t DEFAULT_MAX_LOCK_MEMORY = 64L * 1024 * 1024;
 
   // tracks the current number of locks and lock memory
   uint64_t m_max_lock_memory;
@@ -482,8 +482,8 @@ class locktree {
   // if the system goes single threaded, it ought to be pretty quick
   // for 100 transactions to go by, so we won't have to wait long before
   // we start doing the single txind optimzation again.
-  static const int STO_BUFFER_MAX_SIZE = 50 * 1024;
-  static const int STO_SCORE_THRESHOLD = 100;
+  static constexpr int STO_BUFFER_MAX_SIZE = 50 * 1024;
+  static constexpr int STO_SCORE_THRESHOLD = 100;
   int m_sto_score;
 
   // statistics about time spent ending the STO early

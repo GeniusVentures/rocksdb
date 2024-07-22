@@ -238,7 +238,7 @@ class TableCache {
 
   // Capacity of the backing Cache that indicates infinite TableCache capacity.
   // For example when max_open_files is -1 we set the backing Cache to this.
-  static const int kInfiniteCapacity = 0x400000;
+  static constexpr int kInfiniteCapacity = 0x400000;
 
   // The tables opened with this TableCache will be immortal, i.e., their
   // lifetime is as long as that of the DB.

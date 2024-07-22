@@ -67,7 +67,7 @@ class InlineSkipList {
   using DecodedKey =
       typename std::remove_reference<Comparator>::type::DecodedType;
 
-  static const uint16_t kMaxPossibleHeight = 32;
+  static constexpr uint16_t kMaxPossibleHeight = 32;
 
   // Create a new InlineSkipList object that will use "cmp" for comparing
   // keys, and will allocate memory using "*allocator".  Objects allocated

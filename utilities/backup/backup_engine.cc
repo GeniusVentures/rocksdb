@@ -840,11 +840,11 @@ class BackupEngineImpl {
   std::unique_ptr<FSDirectory> meta_directory_;
   std::unique_ptr<FSDirectory> private_directory_;
 
-  static const size_t kDefaultCopyFileBufferSize = 5 * 1024 * 1024LL;  // 5MB
+  static constexpr size_t kDefaultCopyFileBufferSize = 5 * 1024 * 1024LL;  // 5MB
   bool read_only_;
   BackupStatistics backup_statistics_;
   std::unordered_set<std::string> reported_ignored_fields_;
-  static const size_t kMaxAppMetaSize = 1024 * 1024;  // 1MB
+  static constexpr size_t kMaxAppMetaSize = 1024 * 1024;  // 1MB
   std::shared_ptr<FileSystem> db_fs_;
   std::shared_ptr<FileSystem> backup_fs_;
   IOOptions io_options_ = IOOptions();

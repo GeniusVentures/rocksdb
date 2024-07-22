@@ -474,7 +474,7 @@ class TestMemLogger : public Logger {
  private:
   std::unique_ptr<FSWritableFile> file_;
   std::atomic_size_t log_size_;
-  static const uint64_t flush_every_seconds_ = 5;
+  static constexpr uint64_t flush_every_seconds_ = 5;
   std::atomic_uint_fast64_t last_flush_micros_;
   SystemClock* clock_;
   IOOptions options_;

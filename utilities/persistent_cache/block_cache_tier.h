@@ -79,9 +79,9 @@ class BlockCacheTier : public PersistentCacheTier {
 
  private:
   // Percentage of cache to be evicted when the cache is full
-  static const size_t kEvictPct = 10;
+  static constexpr size_t kEvictPct = 10;
   // Max attempts to insert key, value to cache in pipelined mode
-  static const size_t kMaxRetry = 3;
+  static constexpr size_t kMaxRetry = 3;
 
   // Pipelined operation
   struct InsertOp {

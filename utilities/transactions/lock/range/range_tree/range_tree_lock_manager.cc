@@ -36,8 +36,8 @@ RangeLockManagerHandle* NewRangeLockManager(
   return new RangeTreeLockManager(use_factory);
 }
 
-static const char SUFFIX_INFIMUM = 0x0;
-static const char SUFFIX_SUPREMUM = 0x1;
+static constexpr char SUFFIX_INFIMUM = 0x0;
+static constexpr char SUFFIX_SUPREMUM = 0x1;
 
 // Convert Endpoint into an internal format used for storing it in locktree
 // (DBT structure is used for passing endpoints to locktree and getting back)

@@ -174,7 +174,7 @@ class CompactionFilter : public Customizable {
     // map.
     TablePropertiesCollection input_table_properties;
 
-    static const int kUnknownStartLevel = -1;
+    static constexpr int kUnknownStartLevel = -1;
   };
 
   virtual ~CompactionFilter() {}

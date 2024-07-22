@@ -110,7 +110,7 @@ struct WriteBatchIndexEntry {
 
   // If this flag appears in the key_size, it indicates a
   // key that is smaller than any other entry for the same column family.
-  static const size_t kFlagMinInCf = std::numeric_limits<size_t>::max();
+  static constexpr size_t kFlagMinInCf = std::numeric_limits<size_t>::max();
 
   bool is_min_in_cf() const {
     assert(key_size != kFlagMinInCf ||

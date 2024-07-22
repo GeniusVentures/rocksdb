@@ -107,7 +107,7 @@ DEFINE_bool(low_open_files_mode, false,
 
 namespace ROCKSDB_NAMESPACE {
 
-static const int kPrefixSize = 3;
+static constexpr int kPrefixSize = 3;
 
 class WriteStress {
  public:
