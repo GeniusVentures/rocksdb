@@ -215,7 +215,7 @@ std::shared_ptr<ObjectLibrary> &ObjectLibrary::Default() {
 
 ObjectRegistry::ObjectRegistry(const std::shared_ptr<ObjectLibrary> &library) {
   libraries_.push_back(library);
-  for (const auto &b : builtins_) {
+  for (const auto &b : GetBuiltins()) {
     RegisterPlugin(b.first, b.second);
   }
 }

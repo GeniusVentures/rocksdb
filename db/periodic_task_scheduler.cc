@@ -19,7 +19,11 @@ namespace ROCKSDB_NAMESPACE {
 // Note: It's not efficient to have a static global mutex, for
 // PeriodicTaskScheduler it should be okay, as the operations are called
 // infrequently.
-static port::Mutex timer_mutex;
+static port::Mutex &GetTimerMutex()
+{
+  static port::Mutex timer_mutex;
+  return timer_mutex;
+}
 
 static const std::map<PeriodicTaskType, uint64_t>& GetDefaultPeriodSeconds() {
   static const std::map<PeriodicTaskType, uint64_t> kDefaultPeriodSeconds = {
@@ -51,7 +55,7 @@ Status PeriodicTaskScheduler::Register(PeriodicTaskType task_type,
 Status PeriodicTaskScheduler::Register(PeriodicTaskType task_type,
                                        const PeriodicTaskFunc& fn,
                                        uint64_t repeat_period_seconds) {
-  MutexLock l(&timer_mutex);
+  MutexLock l(&GetTimerMutex());
   static std::atomic<uint64_t> initial_delay(0);
 
   if (repeat_period_seconds == kInvalidPeriodSec) {
@@ -89,7 +93,7 @@ Status PeriodicTaskScheduler::Register(PeriodicTaskType task_type,
 }
 
 Status PeriodicTaskScheduler::Unregister(PeriodicTaskType task_type) {
-  MutexLock l(&timer_mutex);
+  MutexLock l(&GetTimerMutex());
   auto it = tasks_map_.find(task_type);
   if (it != tasks_map_.end()) {
     timer_->Cancel(it->second.name);
@@ -110,7 +114,7 @@ Timer* PeriodicTaskScheduler::Default() {
 void PeriodicTaskScheduler::TEST_OverrideTimer(SystemClock* clock) {
   static Timer test_timer(clock);
   test_timer.TEST_OverrideTimer(clock);
-  MutexLock l(&timer_mutex);
+  MutexLock l(&GetTimerMutex());
   timer_ = &test_timer;
 }
 #endif  // NDEBUG

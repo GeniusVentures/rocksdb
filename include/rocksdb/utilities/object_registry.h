@@ -574,7 +574,7 @@ class ObjectRegistry {
   // searching for entries.
   std::vector<std::shared_ptr<ObjectLibrary>> libraries_;
   std::vector<std::string> plugins_;
-  static std::unordered_map<std::string, RegistrarFunc> builtins_;
+  static std::unordered_map<std::string, RegistrarFunc>& GetBuiltins();
   std::map<std::string, std::weak_ptr<Customizable>> managed_objects_;
   std::shared_ptr<ObjectRegistry> parent_;
   mutable std::mutex objects_mutex_;  // Mutex for managed objects
