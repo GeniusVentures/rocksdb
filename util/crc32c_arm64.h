@@ -12,7 +12,7 @@
 #if defined(__aarch64__) || defined(__AARCH64__)
 
 #ifdef __ARM_FEATURE_CRC32
-#define HAVE_ARM64_CRC
+
 #include <arm_acle.h>
 #define crc32c_u8(crc, v) __crc32cb(crc, v)
 #define crc32c_u16(crc, v) __crc32ch(crc, v)
