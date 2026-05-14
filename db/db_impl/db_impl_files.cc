@@ -359,6 +359,17 @@ void DBImpl::DeleteObsoleteFileImpl(int job_id, const std::string& fname,
   TEST_SYNC_POINT_CALLBACK("DBImpl::DeleteObsoleteFileImpl::BeforeDeletion",
                            const_cast<std::string*>(&fname));
 
+  auto has_suffix = [](const std::string& v, const char* suffix) {
+    size_t n = std::char_traits<char>::length(suffix);
+    return v.size() >= n && v.compare(v.size() - n, n, suffix) == 0;
+  };
+  if (has_suffix(fname, ".sst") && type != kTableFile) {
+    ROCKS_LOG_ERROR(immutable_db_options_.info_log,
+                    "[JOB %d] File type/extension mismatch before delete: fname=%s type=%d #%llu",
+                    job_id, fname.c_str(), static_cast<int>(type),
+                    static_cast<unsigned long long>(number));
+  }
+
   Status file_deletion_status;
   if (type == kTableFile || type == kBlobFile || type == kWalFile) {
     // Rate limit WAL deletion only if its in the DB dir
@@ -540,6 +551,166 @@ void DBImpl::PurgeObsoleteFiles(JobContext& state, bool schedule_only) {
 
     if (quarantine_files_set.find(number) != quarantine_files_set.end()) {
       continue;
+    }
+
+    auto has_suffix = [](const std::string& v, const char* suffix) {
+      size_t n = std::char_traits<char>::length(suffix);
+      return v.size() >= n && v.compare(v.size() - n, n, suffix) == 0;
+    };
+    if (has_suffix(to_delete, ".sst") && type != kTableFile) {
+      uint64_t base_number = 0;
+      FileType base_type = kTempFile;
+      bool base_parse_ok = false;
+      std::string base_name = to_delete;
+      size_t slash_pos = base_name.find_last_of('/');
+      if (slash_pos != std::string::npos && slash_pos + 1 < base_name.size()) {
+        base_name = base_name.substr(slash_pos + 1);
+      }
+      base_parse_ok = ParseFileName(base_name, &base_number,
+                                    info_log_prefix.prefix, &base_type);
+
+      uint64_t default_number = 0;
+      FileType default_type = kTempFile;
+      bool default_parse_ok = ParseFileName(base_name, &default_number,
+                                            &default_type);
+
+      uint64_t noinfo_number = 0;
+      FileType noinfo_type = kTempFile;
+      bool noinfo_parse_ok = ParseFileName(base_name, &noinfo_number,
+                                           Slice(""), &noinfo_type);
+
+      uint64_t canonical_number = 0;
+      FileType canonical_type = kTempFile;
+      std::string canonical_name = MakeTableFileName(number);
+      bool canonical_parse_ok =
+          ParseFileName(canonical_name, &canonical_number, &canonical_type);
+
+      bool looks_numeric_sst = false;
+      size_t dot_pos = base_name.rfind('.');
+      if (dot_pos != std::string::npos && dot_pos > 0 &&
+          base_name.substr(dot_pos + 1) == "sst") {
+        looks_numeric_sst = true;
+        for (size_t i = 0; i < dot_pos; ++i) {
+          if (base_name[i] < '0' || base_name[i] > '9') {
+            looks_numeric_sst = false;
+            break;
+          }
+        }
+      }
+
+      const std::string& options_prefix = GetOptionsFileNamePrefix();
+      std::string prefix_hex;
+      prefix_hex.reserve(options_prefix.size() * 3);
+      static const char* kHex = "0123456789ABCDEF";
+      for (unsigned char c : options_prefix) {
+        prefix_hex.push_back(kHex[(c >> 4) & 0xF]);
+        prefix_hex.push_back(kHex[c & 0xF]);
+        prefix_hex.push_back(' ');
+      }
+
+      std::string bytes;
+      bytes.reserve(to_delete.size() * 3);
+      for (unsigned char c : to_delete) {
+        bytes.push_back(kHex[(c >> 4) & 0xF]);
+        bytes.push_back(kHex[c & 0xF]);
+        bytes.push_back(' ');
+      }
+
+      uint64_t opts_num = 0;
+      FileType opts_type = kTempFile;
+      bool opts_parse_ok = ParseFileName("OPTIONS-000001", &opts_num, &opts_type);
+
+      uint64_t temp_num = 0;
+      FileType temp_type = kTableFile;
+      bool temp_parse_ok = ParseFileName("OPTIONS-000001.dbtmp", &temp_num, &temp_type);
+
+      uint64_t sst_num = 0;
+      FileType sst_type = kOptionsFile;
+      bool sst_parse_ok = ParseFileName("000001.sst", &sst_num, &sst_type);
+
+      uint64_t ldb_num = 0;
+      FileType ldb_type = kOptionsFile;
+      bool ldb_parse_ok = ParseFileName("000001.ldb", &ldb_num, &ldb_type);
+
+      std::string sample_table = MakeTableFileName(1);
+      std::string sample_opts = OptionsFileName(1);
+      std::string sample_temp_opts = TempOptionsFileName("", 1);
+
+    #ifdef _ITERATOR_DEBUG_LEVEL
+      constexpr int kIterDbg = _ITERATOR_DEBUG_LEVEL;
+    #else
+      constexpr int kIterDbg = -1;
+    #endif
+    #ifdef _MSC_VER
+      constexpr int kMsvcVer = _MSC_VER;
+    #else
+      constexpr int kMsvcVer = -1;
+    #endif
+    #ifdef _MSVC_STL_UPDATE
+      constexpr long kMsvcStlUpdate = _MSVC_STL_UPDATE;
+    #else
+      constexpr long kMsvcStlUpdate = -1;
+    #endif
+
+      static bool abi_dumped = false;
+      if (!abi_dumped) {
+        abi_dumped = true;
+        ROCKS_LOG_ERROR(
+        immutable_db_options_.info_log,
+        "[JOB %d] Parse ABI self-check: sizeof(std::string)=%llu _ITERATOR_DEBUG_LEVEL=%d _MSC_VER=%d _MSVC_STL_UPDATE=%ld",
+        state.job_id,
+        static_cast<unsigned long long>(sizeof(std::string)), kIterDbg,
+        kMsvcVer, kMsvcStlUpdate);
+      }
+
+      ROCKS_LOG_ERROR(immutable_db_options_.info_log,
+                      "[JOB %d] Candidate file parse mismatch: name=%s type=%d #%llu"
+                      " base=%s base_parse_ok=%d base_type=%d base_num=%llu"
+                      " default_parse_ok=%d default_type=%d default_num=%llu"
+                      " noinfo_parse_ok=%d noinfo_type=%d noinfo_num=%llu"
+                      " canonical=%s canonical_parse_ok=%d canonical_type=%d canonical_num=%llu"
+              " sample_table=%s sample_opts=%s sample_temp_opts=%s"
+              " parse_OPTIONS=%d/%d/%llu parse_OPTIONS_dbtmp=%d/%d/%llu parse_000001.sst=%d/%d/%llu parse_000001.ldb=%d/%d/%llu"
+                      " looks_numeric_sst=%d kTableFile=%d kOptionsFile=%d"
+                      " info_log_prefix='%s' options_prefix='%s' options_prefix_hex=%s"
+                      " name_size=%llu name_hex=%s",
+                      state.job_id, to_delete.c_str(), static_cast<int>(type),
+                      static_cast<unsigned long long>(number),
+                      base_name.c_str(), base_parse_ok ? 1 : 0,
+                      static_cast<int>(base_type),
+                      static_cast<unsigned long long>(base_number),
+                      default_parse_ok ? 1 : 0,
+                      static_cast<int>(default_type),
+                      static_cast<unsigned long long>(default_number),
+                      noinfo_parse_ok ? 1 : 0,
+                      static_cast<int>(noinfo_type),
+                      static_cast<unsigned long long>(noinfo_number),
+                      canonical_name.c_str(), canonical_parse_ok ? 1 : 0,
+                      static_cast<int>(canonical_type),
+                      static_cast<unsigned long long>(canonical_number),
+                      sample_table.c_str(),
+                      sample_opts.c_str(),
+                      sample_temp_opts.c_str(),
+                      opts_parse_ok ? 1 : 0,
+                      static_cast<int>(opts_type),
+                      static_cast<unsigned long long>(opts_num),
+                      temp_parse_ok ? 1 : 0,
+                      static_cast<int>(temp_type),
+                      static_cast<unsigned long long>(temp_num),
+                      sst_parse_ok ? 1 : 0,
+                      static_cast<int>(sst_type),
+                      static_cast<unsigned long long>(sst_num),
+                      ldb_parse_ok ? 1 : 0,
+                      static_cast<int>(ldb_type),
+                      static_cast<unsigned long long>(ldb_num),
+                      looks_numeric_sst ? 1 : 0,
+                      static_cast<int>(kTableFile),
+                      static_cast<int>(kOptionsFile),
+                      info_log_prefix.prefix.ToString().c_str(),
+                      options_prefix.c_str(),
+                      prefix_hex.c_str(),
+                      static_cast<unsigned long long>(to_delete.size()),
+                      bytes.c_str());
     }
 
     bool keep = true;
