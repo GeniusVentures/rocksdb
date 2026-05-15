@@ -8,13 +8,9 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 #include "file/filename.h"
 
-#include <atomic>
-#include <cstdlib>
 #include <cctype>
 #include <cinttypes>
 #include <cstdio>
-#include <functional>
-#include <thread>
 #include <vector>
 
 #include "file/file_util.h"
@@ -62,114 +58,6 @@ static const std::string& GetArchivalDirName() {
   static const std::string* kArchivalDirName = new std::string("archive");
   return *kArchivalDirName;
 }
-
-namespace {
-
-std::atomic<uint64_t> g_filename_probe_call_counter{0};
-std::atomic<int> g_filename_probe_phase{0};
-std::atomic<bool> g_filename_probe_atexit_registered{false};
-
-struct FilenameProbeLifetime {
-  ~FilenameProbeLifetime() {
-    g_filename_probe_phase.store(2, std::memory_order_relaxed);
-    std::fprintf(stderr,
-                 "[RDB-FILENAME-PROBE] kind=lifetime_dtor phase=2\n");
-    std::fflush(stderr);
-  }
-};
-
-FilenameProbeLifetime g_filename_probe_lifetime;
-
-void RegisterFilenameProbeAtexitOnce() {
-  if (!g_filename_probe_atexit_registered.exchange(true,
-                                                   std::memory_order_relaxed)) {
-    std::atexit([]() {
-      g_filename_probe_phase.store(1, std::memory_order_relaxed);
-      std::fprintf(stderr,
-                   "[RDB-FILENAME-PROBE] kind=atexit phase=1\n");
-      std::fflush(stderr);
-    });
-  }
-}
-
-void MaybeLogFilenameConstantsProbe(const char* where) {
-  static std::atomic<bool> baseline_emitted{false};
-  static std::atomic<bool> anomaly_emitted{false};
-
-  RegisterFilenameProbeAtexitOnce();
-  const uint64_t call_index =
-      g_filename_probe_call_counter.fetch_add(1, std::memory_order_relaxed) +
-      1;
-  const uint64_t thread_tag =
-      static_cast<uint64_t>(std::hash<std::thread::id>{}(
-          std::this_thread::get_id()));
-  const int phase = g_filename_probe_phase.load(std::memory_order_relaxed);
-
-  const std::string& options_prefix = GetOptionsFileNamePrefix();
-  const std::string& temp_suffix = GetTempFileNameSuffix();
-  const std::string& rocks_ext = GetRocksDbFileExt();
-  const std::string& level_ext = GetLevelDbFileExt();
-  const std::string& blob_ext = GetRocksDBBlobFileExt();
-  const std::string& archival_dir = GetArchivalDirName();
-
-  const bool looks_expected =
-      options_prefix == "OPTIONS-" && temp_suffix == "dbtmp" &&
-      rocks_ext == "sst" && level_ext == "ldb" && blob_ext == "blob" &&
-      archival_dir == "archive";
-
-  auto emit = [&](const char* kind) {
-    const int options_len =
-        static_cast<int>(options_prefix.size() < 64 ? options_prefix.size()
-                                                    : 64);
-    const int temp_len =
-        static_cast<int>(temp_suffix.size() < 64 ? temp_suffix.size() : 64);
-    const int rocks_len =
-        static_cast<int>(rocks_ext.size() < 64 ? rocks_ext.size() : 64);
-    const int level_len =
-        static_cast<int>(level_ext.size() < 64 ? level_ext.size() : 64);
-    const int blob_len =
-        static_cast<int>(blob_ext.size() < 64 ? blob_ext.size() : 64);
-    const int archive_len =
-        static_cast<int>(archival_dir.size() < 64 ? archival_dir.size() : 64);
-    std::fprintf(
-        stderr,
-        "[RDB-FILENAME-PROBE] kind=%s where=%s "
-        "options='%.*s' options_size=%zu options_obj=%p options_cstr=%p "
-        "temp='%.*s' temp_size=%zu temp_obj=%p temp_cstr=%p "
-        "rocks='%.*s' rocks_size=%zu rocks_obj=%p rocks_cstr=%p "
-        "level='%.*s' level_size=%zu level_obj=%p level_cstr=%p "
-        "blob='%.*s' blob_size=%zu blob_obj=%p blob_cstr=%p "
-        "archive='%.*s' archive_size=%zu archive_obj=%p archive_cstr=%p "
-        "looks_expected=%d call=%" PRIu64 " tid=%" PRIu64 " phase=%d\n",
-        kind, where, options_len, options_prefix.c_str(), options_prefix.size(),
-        static_cast<const void*>(&options_prefix),
-        static_cast<const void*>(options_prefix.c_str()), temp_len,
-        temp_suffix.c_str(), temp_suffix.size(),
-        static_cast<const void*>(&temp_suffix),
-        static_cast<const void*>(temp_suffix.c_str()), rocks_len,
-        rocks_ext.c_str(), rocks_ext.size(), static_cast<const void*>(&rocks_ext),
-        static_cast<const void*>(rocks_ext.c_str()), level_len,
-        level_ext.c_str(), level_ext.size(), static_cast<const void*>(&level_ext),
-        static_cast<const void*>(level_ext.c_str()), blob_len, blob_ext.c_str(),
-        blob_ext.size(), static_cast<const void*>(&blob_ext),
-        static_cast<const void*>(blob_ext.c_str()), archive_len,
-        archival_dir.c_str(), archival_dir.size(),
-        static_cast<const void*>(&archival_dir),
-        static_cast<const void*>(archival_dir.c_str()), looks_expected ? 1 : 0,
-        call_index, thread_tag, phase);
-    std::fflush(stderr);
-  };
-
-  if (!baseline_emitted.exchange(true, std::memory_order_relaxed)) {
-    emit("baseline");
-  }
-  if (!looks_expected &&
-      !anomaly_emitted.exchange(true, std::memory_order_relaxed)) {
-    emit("anomaly");
-  }
-}
-
-}  // namespace
 
 // Given a path, flatten the path name by replacing all chars not in
 // {[0-9,a-z,A-Z,-,_,.]} with _. And append '_LOG\0' at the end.
@@ -249,12 +137,10 @@ std::string ArchivedLogFileName(const std::string& name, uint64_t number) {
 }
 
 std::string MakeTableFileName(const std::string& path, uint64_t number) {
-  MaybeLogFilenameConstantsProbe("MakeTableFileName(path)");
   return MakeFileName(path, number, GetRocksDbFileExt().c_str());
 }
 
 std::string MakeTableFileName(uint64_t number) {
-  MaybeLogFilenameConstantsProbe("MakeTableFileName(number)");
   return MakeFileName(number, GetRocksDbFileExt().c_str());
 }
 
@@ -366,7 +252,6 @@ std::string OldInfoLogFileName(const std::string& dbname, uint64_t ts,
 }
 
 std::string OptionsFileName(uint64_t file_num) {
-  MaybeLogFilenameConstantsProbe("OptionsFileName");
   char buffer[256];
   snprintf(buffer, sizeof(buffer), "%s%06" PRIu64,
            GetOptionsFileNamePrefix().c_str(), file_num);
@@ -377,7 +262,6 @@ std::string OptionsFileName(const std::string& dbname, uint64_t file_num) {
 }
 
 std::string TempOptionsFileName(const std::string& dbname, uint64_t file_num) {
-  MaybeLogFilenameConstantsProbe("TempOptionsFileName");
   char buffer[256];
   snprintf(buffer, sizeof(buffer), "%s%06" PRIu64 ".%s",
            GetOptionsFileNamePrefix().c_str(), file_num,
@@ -416,7 +300,6 @@ bool ParseFileName(const std::string& fname, uint64_t* number, FileType* type,
 bool ParseFileName(const std::string& fname, uint64_t* number,
                    const Slice& info_log_name_prefix, FileType* type,
                    WalFileType* log_type) {
-  MaybeLogFilenameConstantsProbe("ParseFileName");
   Slice rest(fname);
   if (fname.length() > 1 && fname[0] == '/') {
     rest.remove_prefix(1);

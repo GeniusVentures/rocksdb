@@ -3055,16 +3055,6 @@ void DBImpl::SchedulePendingPurge(std::string fname, std::string dir_to_sync,
   if (reject_new_background_jobs_) {
     return;
   }
-  auto it = purge_files_.find(number);
-  if (it != purge_files_.end()) {
-    ROCKS_LOG_WARN(immutable_db_options_.info_log,
-                   "[JOB %d] Pending purge file-number collision #" PRIu64
-                   " old(fname=%s,type=%d,#%" PRIu64 ")"
-                   " new(fname=%s,type=%d,#%" PRIu64 ")",
-                   job_id, number, it->second.fname.c_str(),
-                   static_cast<int>(it->second.type), it->second.number,
-                   fname.c_str(), static_cast<int>(type), number);
-  }
   PurgeFileInfo file_info(fname, dir_to_sync, type, number, job_id);
   purge_files_.insert({{number, std::move(file_info)}});
 }
