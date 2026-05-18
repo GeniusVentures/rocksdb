@@ -24,38 +24,39 @@
 namespace ROCKSDB_NAMESPACE {
 
 const std::string& GetCurrentFileName() {
-  static const std::string kCurrentFileName = "CURRENT";
-  return kCurrentFileName;
+  static const std::string* kCurrentFileName = new std::string("CURRENT");
+  return *kCurrentFileName;
 }
 
 const std::string& GetOptionsFileNamePrefix() {
-  static const std::string kOptionsFileNamePrefix = "OPTIONS-";
-  return kOptionsFileNamePrefix;
+  static const std::string* kOptionsFileNamePrefix =
+      new std::string("OPTIONS-");
+  return *kOptionsFileNamePrefix;
 }
 
 const std::string& GetTempFileNameSuffix() {
-  static const std::string kTempFileNameSuffix = "dbtmp";
-  return kTempFileNameSuffix;
+  static const std::string* kTempFileNameSuffix = new std::string("dbtmp");
+  return *kTempFileNameSuffix;
 }
 
 static const std::string& GetRocksDbFileExt() {
-  static const std::string kRocksDbTFileExt = "sst";
-  return kRocksDbTFileExt;
+  static const std::string* kRocksDbTFileExt = new std::string("sst");
+  return *kRocksDbTFileExt;
 }
 
 static const std::string& GetLevelDbFileExt() {
-  static const std::string kLevelDbTFileExt = "ldb";
-  return kLevelDbTFileExt;
+  static const std::string* kLevelDbTFileExt = new std::string("ldb");
+  return *kLevelDbTFileExt;
 }
 
 static const std::string& GetRocksDBBlobFileExt() {
-  static const std::string kRocksDBBlobFileExt = "blob";
-  return kRocksDBBlobFileExt;
+  static const std::string* kRocksDBBlobFileExt = new std::string("blob");
+  return *kRocksDBBlobFileExt;
 }
 
 static const std::string& GetArchivalDirName() {
-  static const std::string kArchivalDirName = "archive";
-  return kArchivalDirName;
+  static const std::string* kArchivalDirName = new std::string("archive");
+  return *kArchivalDirName;
 }
 
 // Given a path, flatten the path name by replacing all chars not in
