@@ -6022,6 +6022,10 @@ Status VersionSet::GetCurrentManifestPath(const std::string& dbname,
   }
   // remove the trailing '\n'
   fname.resize(fname.size() - 1);
+  // On Windows, git may convert LF to CRLF; strip optional trailing '\r'
+  if (!fname.empty() && fname.back() == '\r') {
+    fname.resize(fname.size() - 1);
+  }
   FileType type;
   bool parse_ok = ParseFileName(fname, manifest_file_number, &type);
   if (!parse_ok || type != kDescriptorFile) {
