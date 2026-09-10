@@ -6,6 +6,8 @@
 
 #include "env/fs_remap.h"
 
+#include <cstdint>
+
 namespace ROCKSDB_NAMESPACE {
 
 RemapFileSystem::RemapFileSystem(const std::shared_ptr<FileSystem>& base)

@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 // For testing purposes
 #if ROCKSDB_NAMESPACE == 42
 #undef ROCKSDB_NAMESPACE

@@ -5,6 +5,8 @@
 
 #include "util/crc32c_arm64.h"
 
+#include <cstdint>
+
 #if defined(HAVE_ARM64_CRC)
 
 #if defined(__linux__)
